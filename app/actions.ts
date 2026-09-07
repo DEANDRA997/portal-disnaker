@@ -79,28 +79,16 @@ export async function saveTransaction(data: any, cartItems: Array<{item: string,
 // ==========================================
 export async function loginUser(username: string, password: string) {
   try {
-   // 1. Cek apakah tabel User masih kosong (Auto-Seed Akun Bawaan)
-    const userCount = await prisma.user.count();
-    if (userCount === 0) {
-      await prisma.user.createMany({
-        data: [
-          { username: 'admin', password: '123', role: 'ADMIN', name: 'Pusat Administrator' }, // <-- Akun Super Admin baru
-          { username: 'menteri', password: '123', role: 'MENTERI', name: 'Menteri Industri' },
-          { username: 'staff', password: '123', role: 'STAFF', name: 'Budi (Staff)' }
-        ]
-      });
-    }
-
-    // 2. Cari User di Database
+    // 1. Cari User di Database
     const user = await prisma.user.findUnique({ where: { username } });
     
-    // 3. Validasi Password (Sederhana untuk RP)
+    // 2. Validasi Password (Sederhana untuk RP)
     if (!user || user.password !== password) {
       return { success: false, message: 'ID Petugas atau Kata Sandi salah!' };
     }
 
-    // 4. Simpan Sesi di Cookies (Masa aktif 1 Hari / 86400 detik)
-    const cookieStore = await cookies(); // <-- Tambahkan await di sini
+    // 3. Simpan Sesi di Cookies (Masa aktif 1 Hari / 86400 detik)
+    const cookieStore = await cookies();
     
     cookieStore.set({
       name: 'userRole',
