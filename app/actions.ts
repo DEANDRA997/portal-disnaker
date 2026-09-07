@@ -87,21 +87,25 @@ export async function loginUser(username: string, password: string) {
       return { success: false, message: 'ID Petugas atau Kata Sandi salah!' };
     }
 
-    // 3. Simpan Sesi di Cookies (Masa aktif 1 Hari / 86400 detik)
+// 3. Simpan Sesi di Cookies (Masa aktif 1 Hari / 86400 detik)
     const cookieStore = await cookies();
     
     cookieStore.set({
       name: 'userRole',
       value: user.role,
       maxAge: 86400,
-      path: '/'
+      path: '/',
+      secure: true,       // <-- Wajib untuk server Vercel (HTTPS)
+      sameSite: 'lax'     // <-- Mencegah browser membuang cookies secara sepihak
     });
 
     cookieStore.set({
       name: 'userName',
       value: user.name || 'Pegawai',
       maxAge: 86400,
-      path: '/'
+      path: '/',
+      secure: true,       // <-- Wajib untuk server Vercel (HTTPS)
+      sameSite: 'lax'     // <-- Mencegah browser membuang cookies secara sepihak
     });
 
     return { success: true, user: { name: user.name, role: user.role } };
