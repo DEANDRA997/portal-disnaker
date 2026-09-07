@@ -99,12 +99,22 @@ export async function loginUser(username: string, password: string) {
       return { success: false, message: 'ID Petugas atau Kata Sandi salah!' };
     }
 
-    // 4. Simpan Sesi di Cookies (Masa aktif 1 Hari)
-    const oneDay = 24 * 60 * 60 * 1000;
+    // 4. Simpan Sesi di Cookies (Masa aktif 1 Hari / 86400 detik)
     const cookieStore = await cookies(); // <-- Tambahkan await di sini
     
-    cookieStore.set('userRole', user.role, { expires: Date.now() + oneDay, path: '/' });
-    cookieStore.set('userName', user.name, { expires: Date.now() + oneDay, path: '/' });
+    cookieStore.set({
+      name: 'userRole',
+      value: user.role,
+      maxAge: 86400,
+      path: '/'
+    });
+
+    cookieStore.set({
+      name: 'userName',
+      value: user.name || 'Pegawai',
+      maxAge: 86400,
+      path: '/'
+    });
 
     return { success: true, user: { name: user.name, role: user.role } };
   } catch (error) {
