@@ -21,15 +21,16 @@ export default function LoginPage() {
     const res = await loginUser(username, password);
 
     if (res.success) {
-      // Jika berhasil, arahkan ke URL /dashboard
-      router.push('/dashboard');
+      // GANTI router.push menjadi window.location.href
+      // Ini memaksa browser memuat ulang secara penuh membawa tiket sesi barumu
+      window.location.href = '/dashboard';
     } else {
       // Jika gagal, tampilkan pesan error
       setErrorMsg(res.message || 'Login Gagal');
       setIsLoading(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-[#0f111a] text-slate-300 relative font-sans overflow-hidden flex items-center justify-center p-4">
       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#ffffff20 1px, transparent 1px), linear-gradient(90deg, #ffffff20 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
