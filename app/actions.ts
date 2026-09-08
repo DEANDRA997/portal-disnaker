@@ -2,8 +2,8 @@
 
 import { prisma } from "./lib/prisma";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers"; // <-- Import Cookies Next.js
-import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation"; 
 
 export async function getTransactions() {
   try {
@@ -79,7 +79,7 @@ export async function saveTransaction(data: any, cartItems: Array<{item: string,
 // FUNGSI SISTEM LOGIN & ROLE AKSES
 // ==========================================
 export async function loginUser(username: string, password: string) {
-  let isSuccess = false; // Penanda untuk memicu redirect
+  let isSuccess = false;
   
   try {
     // 1. Cari User di Database
@@ -90,7 +90,7 @@ export async function loginUser(username: string, password: string) {
       return { success: false, message: 'ID Petugas atau Kata Sandi salah!' };
     }
 
-    // 3. Simpan Sesi di Cookies
+    // 3. Simpan Sesi di Cookies yang Aman untuk Vercel
     const cookieStore = await cookies();
     const isProduction = process.env.NODE_ENV === 'production';
     
@@ -112,20 +112,20 @@ export async function loginUser(username: string, password: string) {
       sameSite: 'lax'
     });
 
-    isSuccess = true; // Tandai bahwa login berhasil tanpa error
+    isSuccess = true;
   } catch (error) {
     console.error("Login error:", error);
     return { success: false, message: 'Terjadi kesalahan sistem server.' };
   }
 
-  // PENTING: Perintah redirect() di Next.js HARUS berada di luar blok try-catch!
+  // 4. SERVER-SIDE REDIRECT
   if (isSuccess) {
     redirect('/dashboard');
   }
 }
 
 export async function logoutUser() {
-  const cookieStore = await cookies(); // <-- Tambahkan await di sini juga
+  const cookieStore = await cookies();
   
   cookieStore.set('userRole', '', { maxAge: 0, path: '/' });
   cookieStore.set('userName', '', { maxAge: 0, path: '/' });
@@ -133,65 +133,82 @@ export async function logoutUser() {
   return { success: true };
 }
 
-// Fungsi untuk membaca identitas pegawai yang sedang aktif (dari Cookies)
+// Fungsi untuk membaca identitas pegawai yang sedang aktif
 export async function getActiveUser() {
   const cookieStore = await cookies();
   const role = cookieStore.get('userRole')?.value;
   const name = cookieStore.get('userName')?.value;
   
-  if (!role || !name) return null; // Belum login
+  if (!role || !name) return null; 
   
   return { role, name };
 }
 
 // ==========================================
-// FUNGSI MANAJEMEN PEGAWAI (KHUSUS PETINGGI)
+// FUNGSI MANAJEMEN PEGAWAI (KHUSUS ADMIN)
 // ==========================================
 
-// Mengambil semua daftar pegawai
 export async function getAllUsers() {
   try {
     return await prisma.user.findMany({
-      orderBy: { role: 'asc' } // Urutkan berdasarkan jabatan
+      orderBy: { role: 'asc' } 
     });
   } catch (error) {
     return [];
   }
 }
 
-// Menambah pegawai baru
 export async function createUser(data: { username: string, name: string, role: string, password: string }) {
   try {
     await prisma.user.create({ data });
-    revalidatePath("/dashboard/pegawai");
+    revalidatePath("/dashboard");
     return { success: true };
   } catch (error) {
-    console.error(error);
     return { success: false, message: 'Gagal! ID Petugas mungkin sudah dipakai.' };
   }
 }
 
-// Mereset password pegawai
 export async function resetUserPassword(id: string, newPassword: string) {
   try {
     await prisma.user.update({
       where: { id },
       data: { password: newPassword }
     });
-    revalidatePath("/dashboard/pegawai");
+    revalidatePath("/dashboard");
     return { success: true };
   } catch (error) {
     return { success: false, message: 'Gagal mereset kata sandi.' };
   }
 }
 
-// Menghapus pegawai (Cabut Akses)
 export async function deleteUser(id: string) {
   try {
     await prisma.user.delete({ where: { id } });
-    revalidatePath("/dashboard/pegawai");
+    revalidatePath("/dashboard");
     return { success: true };
   } catch (error) {
     return { success: false, message: 'Gagal menghapus pegawai.' };
+  }
+}
+
+// ==========================================
+// FUNGSI UANG KAS SUNTIKAN PRESIDEN (BARU)
+// ==========================================
+
+export async function getKasNegara() {
+  try {
+    return await prisma.kasNegara.findMany({ orderBy: { createdAt: 'desc' } });
+  } catch (error) {
+    return [];
+  }
+}
+
+export async function addKasNegara(data: { tanggal: string; jumlah: number; keterangan: string; penerima: string }) {
+  try {
+    await prisma.kasNegara.create({ data });
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: 'Gagal mencatat Kas Presiden.' };
   }
 }

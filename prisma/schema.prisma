@@ -13,7 +13,6 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// Ini adalah struktur tabel yang akan masuk ke pgAdmin 4
 model Transaction {
   id          String   @id @default(cuid())
   date        String
@@ -39,7 +38,16 @@ model WarehouseStock {
 model User {
   id       String @id @default(cuid())
   username String @unique
-  password String // Nanti kita buat sederhana dulu untuk RP
-  role     String // Isinya: 'ADMIN', 'MENTERI', 'WAMEN', 'STAFF'
-  name     String // Nama Karakter RP
+  password String
+  role     String 
+  name     String
+}
+
+model KasNegara {
+  id         String   @id @default(cuid())
+  tanggal    String
+  jumlah     Float
+  keterangan String
+  penerima   String
+  createdAt  DateTime @default(now())
 }
