@@ -63,30 +63,38 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function loadInitialData() {
-      const user = await getActiveUser();
-      if (!user) {
-        router.push('/login'); 
-        return;
+      try {
+        const user = await getActiveUser();
+        
+        if (!user || !user.role || !user.name) {
+          console.error("Gagal mendapatkan User dari Cookies!");
+          // Jangan langsung router.push! Beri kesempatan Vercel untuk membaca ulang dengan Hard Redirect
+          window.location.href = '/login'; 
+          return;
+        }
+        
+        setActiveUser(user);
+
+        const dbData = await getTransactions();
+        setTransactions(dbData);
+        
+        const dbStock = await getWarehouseStock();
+        setWarehouseStock(dbStock || {});
+
+        if (user.role === 'ADMIN') {
+          const dbUsers = await getAllUsers();
+          setUsersList(dbUsers);
+        }
+      } catch (error) {
+        console.error("Error memuat data awal:", error);
+      } finally {
+        setIsLoading(false);
+        setIsMounted(true);
       }
-      setActiveUser(user);
-
-      const dbData = await getTransactions();
-      setTransactions(dbData);
-      
-      const dbStock = await getWarehouseStock();
-      setWarehouseStock(dbStock || {});
-
-      // Tarik data pegawai HANYA jika yang login adalah ADMIN
-      if (user.role === 'ADMIN') {
-        const dbUsers = await getAllUsers();
-        setUsersList(dbUsers);
-      }
-
-      setIsLoading(false);
-      setIsMounted(true);
     }
+    
     loadInitialData();
-  }, [router]);
+  }, []); // Hapus router dari array dependency agar tidak terpicu berkali-kali!
 
   useEffect(() => {
     if (itemName === 'PROMO') {
@@ -257,7 +265,12 @@ export default function DashboardPage() {
     link.click(); document.body.removeChild(link);
   };
 
-  if (!isMounted || !activeUser) return <div className="min-h-screen bg-[#0f111a]"></div>;
+ if (!isMounted || !activeUser) return (
+    <div className="min-h-screen bg-[#0f111a] flex items-center justify-center">
+       <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+       <p className="text-cyan-400 ml-4 font-bold tracking-widest animate-pulse">MEMVERIFIKASI TIKET OTORITAS...</p>
+    </div>
+  );
 
   const isAdmin = activeUser.role === 'ADMIN';
   const isMenteriOrWamen = activeUser.role === 'MENTERI' || activeUser.role === 'WAMEN' || isAdmin;
