@@ -17,15 +17,12 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMsg('');
 
-    // Panggil fungsi Server Action untuk mencocokkan ke PostgreSQL
+    // Panggil fungsi Server Action
     const res = await loginUser(username, password);
 
-    if (res.success) {
-      // GANTI router.push menjadi window.location.href
-      // Ini memaksa browser memuat ulang secara penuh membawa tiket sesi barumu
-      window.location.href = '/dashboard';
-    } else {
-      // Jika gagal, tampilkan pesan error
+    // Jika kode berhasil sampai ke baris ini, berarti login GAGAL 
+    // (Karena kalau SUKSES, server sudah otomatis me-redirect kamu ke /dashboard duluan)
+    if (res && res.success === false) {
       setErrorMsg(res.message || 'Login Gagal');
       setIsLoading(false);
     }

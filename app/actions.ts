@@ -3,6 +3,7 @@
 import { prisma } from "./lib/prisma";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers"; // <-- Import Cookies Next.js
+import { redirect } from "next/navigation";
 
 export async function getTransactions() {
   try {
@@ -78,25 +79,28 @@ export async function saveTransaction(data: any, cartItems: Array<{item: string,
 // FUNGSI SISTEM LOGIN & ROLE AKSES
 // ==========================================
 export async function loginUser(username: string, password: string) {
+  let isSuccess = false; // Penanda untuk memicu redirect
+  
   try {
     // 1. Cari User di Database
     const user = await prisma.user.findUnique({ where: { username } });
     
-    // 2. Validasi Password (Sederhana untuk RP)
+    // 2. Validasi Password
     if (!user || user.password !== password) {
       return { success: false, message: 'ID Petugas atau Kata Sandi salah!' };
     }
 
-// 3. Simpan Sesi di Cookies (Masa aktif 1 Hari / 86400 detik)
+    // 3. Simpan Sesi di Cookies
     const cookieStore = await cookies();
+    const isProduction = process.env.NODE_ENV === 'production';
     
     cookieStore.set({
       name: 'userRole',
       value: user.role,
       maxAge: 86400,
       path: '/',
-      secure: true,       // <-- Wajib untuk server Vercel (HTTPS)
-      sameSite: 'lax'     // <-- Mencegah browser membuang cookies secara sepihak
+      secure: isProduction,
+      sameSite: 'lax'
     });
 
     cookieStore.set({
@@ -104,14 +108,19 @@ export async function loginUser(username: string, password: string) {
       value: user.name || 'Pegawai',
       maxAge: 86400,
       path: '/',
-      secure: true,       // <-- Wajib untuk server Vercel (HTTPS)
-      sameSite: 'lax'     // <-- Mencegah browser membuang cookies secara sepihak
+      secure: isProduction,
+      sameSite: 'lax'
     });
 
-    return { success: true, user: { name: user.name, role: user.role } };
+    isSuccess = true; // Tandai bahwa login berhasil tanpa error
   } catch (error) {
     console.error("Login error:", error);
     return { success: false, message: 'Terjadi kesalahan sistem server.' };
+  }
+
+  // PENTING: Perintah redirect() di Next.js HARUS berada di luar blok try-catch!
+  if (isSuccess) {
+    redirect('/dashboard');
   }
 }
 
