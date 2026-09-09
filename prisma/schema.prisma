@@ -49,5 +49,6 @@ model KasNegara {
   jumlah     Float
   keterangan String
   penerima   String
+  petugas    String   @default("Sistem")
   createdAt  DateTime @default(now())
 }

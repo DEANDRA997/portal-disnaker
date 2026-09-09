@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { 
   Landmark, ArrowUp, ArrowDown, TrendingUp, PieChart, User, Plus, LogOut, 
   AlertCircle, Package, Calendar, CalendarDays, AlertTriangle, ShieldAlert, ShieldCheck, 
-  Download, Search, UserPlus, Users, Trash2, Key, Banknote 
+  Download, Search, UserPlus, Users, Trash2, Key, Banknote, CalendarSearch
 } from 'lucide-react';
 
 import { 
@@ -42,12 +42,17 @@ export default function DashboardPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [warehouseStock, setWarehouseStock] = useState<Record<string, number>>({});
   const [usersList, setUsersList] = useState<any[]>([]);
-  const [kasPresidenList, setKasPresidenList] = useState<any[]>([]); // Data Kas Presiden
+  const [kasPresidenList, setKasPresidenList] = useState<any[]>([]); 
   
-  const [summaryTab, setSummaryTab] = useState<'HARI_INI' | 'BULAN_INI'>('HARI_INI');
+  const [summaryTab, setSummaryTab] = useState<'HARI_INI' | 'BULAN_INI' | 'CUSTOM'>('HARI_INI');
+  const [filterDate, setFilterDate] = useState(''); // State untuk filter tanggal manual
+  
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // State Transaksi
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const [inputDate, setInputDate] = useState(todayStr); // Input backdate
   const [trxType, setTrxType] = useState<'OUT' | 'IN'>('OUT');
   const [itemName, setItemName] = useState('Anggur');
   const [customItemName, setCustomItemName] = useState('');
@@ -64,6 +69,7 @@ export default function DashboardPage() {
   const [isSavingUser, setIsSavingUser] = useState(false);
 
   // Form Uang Kas Presiden
+  const [inputKasDate, setInputKasDate] = useState(todayStr);
   const [nominalPresiden, setNominalPresiden] = useState<number | ''>('');
   const [ketPresiden, setKetPresiden] = useState('');
   const [isSavingKas, setIsSavingKas] = useState(false);
@@ -76,19 +82,15 @@ export default function DashboardPage() {
         const user = await getActiveUser();
         
         if (!user || !user.role || !user.name) {
-          console.error("Gagal mendapatkan User dari Cookies!");
           window.location.href = '/login'; 
           return;
         }
         
         setActiveUser(user);
-
         const dbData = await getTransactions();
         setTransactions(dbData);
-        
         const dbStock = await getWarehouseStock();
         setWarehouseStock(dbStock || {});
-
         const dbKas = await getKasNegara();
         setKasPresidenList(dbKas);
 
@@ -97,13 +99,12 @@ export default function DashboardPage() {
           setUsersList(dbUsers);
         }
       } catch (error) {
-        console.error("Error memuat data awal:", error);
+        console.error(error);
       } finally {
         setIsLoading(false);
         setIsMounted(true);
       }
     }
-    
     loadInitialData();
   }, []); 
 
@@ -169,24 +170,24 @@ export default function DashboardPage() {
     const officerCut = trxType === 'OUT' ? totalKeseluruhan * 0.2 : 0;
     
     const newTrxData = {
-      date: new Date().toLocaleDateString('en-CA'),
+      date: inputDate, // Menggunakan tanggal dari input
       time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       type: trxType,
       item: cartItems.map(c => `${c.qty}x ${c.item}`).join(', '),
       actor: actorName,
       qty: cartItems.reduce((acc, curr) => acc + curr.qty, 0),
       price: cartItems[0].price,
-      total: totalKeseluruhan, gov, officerCut
+      total: totalKeseluruhan, gov, officerCut,
+      petugas: activeUser?.name || 'Sistem' // Menyimpan siapa yang input
     };
 
     const res = await saveTransaction(newTrxData, cartItems);
 
     if (res.success) {
-      const updatedDB = await getTransactions();
-      setTransactions(updatedDB);
-      const updatedStockDB = await getWarehouseStock();
-      if(updatedStockDB) setWarehouseStock(updatedStockDB);
+      setTransactions(await getTransactions());
+      setWarehouseStock(await getWarehouseStock() || {});
       setCartItems([]);
+      alert("Transaksi berhasil dicatat!");
     } else {
       alert("Terjadi kesalahan sistem!");
     }
@@ -194,14 +195,13 @@ export default function DashboardPage() {
     setIsSaving(false);
   };
 
-  // Fungsi Simpan Kas Presiden
   const handleSimpanKasPresiden = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nominalPresiden || Number(nominalPresiden) <= 0) return alert("Nominal tidak valid!");
     setIsSavingKas(true);
     
     const data = {
-      tanggal: new Date().toLocaleDateString('en-CA'),
+      tanggal: inputKasDate, // Menggunakan input manual jika diubah
       jumlah: Number(nominalPresiden),
       keterangan: ketPresiden || 'Suntikan Dana Presiden',
       penerima: activeUser?.name || 'Menteri'
@@ -223,8 +223,7 @@ export default function DashboardPage() {
     if (res.success) {
       alert("Berhasil mendaftarkan pegawai baru!");
       setNewUsername(''); setNewName(''); setNewPassword(''); setNewRole('STAFF');
-      const updatedUsers = await getAllUsers();
-      setUsersList(updatedUsers);
+      setUsersList(await getAllUsers());
     } else {
       alert(res.message);
     }
@@ -242,12 +241,8 @@ export default function DashboardPage() {
   const handleHapusPegawai = async (id: string, name: string) => {
     if (confirm(`⚠️ PERINGATAN!\nApakah Anda yakin ingin memecat dan mencabut akses sistem untuk ${name}?`)) {
       const res = await deleteUser(id);
-      if (res.success) {
-        const updatedUsers = await getAllUsers();
-        setUsersList(updatedUsers);
-      } else {
-        alert(res.message);
-      }
+      if (res.success) setUsersList(await getAllUsers());
+      else alert(res.message);
     }
   };
 
@@ -270,31 +265,32 @@ export default function DashboardPage() {
   const isPetinggi = activeUser.role === 'MENTERI' || activeUser.role === 'WAMEN' || isAdmin;
   const isMenteriOrAdmin = activeUser.role === 'MENTERI' || isAdmin; 
 
-  // Kalkulasi Data Hari Ini / Bulan Ini
-  const todayStr = new Date().toLocaleDateString('en-CA');
+  // Kalkulasi Filter Data
   const currentMonthStr = todayStr.substring(0, 7);
 
   const filteredTransactions = transactions.filter(trx => {
     if (summaryTab === 'HARI_INI') return trx.date === todayStr;
     if (summaryTab === 'BULAN_INI') return trx.date.startsWith(currentMonthStr);
+    if (summaryTab === 'CUSTOM') return trx.date === filterDate;
     return true;
   });
 
   const filteredKas = kasPresidenList.filter(k => {
     if (summaryTab === 'HARI_INI') return k.tanggal === todayStr;
     if (summaryTab === 'BULAN_INI') return k.tanggal.startsWith(currentMonthStr);
+    if (summaryTab === 'CUSTOM') return k.tanggal === filterDate;
     return true;
   });
 
   const summaryKasGov = filteredTransactions.reduce((acc, curr) => acc + curr.gov, 0);
   const summaryKasPresiden = filteredKas.reduce((acc, curr) => acc + curr.jumlah, 0);
-  const totalKasPemerintah = summaryKasGov + summaryKasPresiden; // Transaksi Jual Beli + Kas Presiden
+  const totalKasPemerintah = summaryKasGov + summaryKasPresiden;
 
   const summaryKomisi = filteredTransactions.reduce((acc, curr) => acc + curr.officerCut, 0);
   const summaryBarangIn = filteredTransactions.filter(t => t.type === 'IN').reduce((acc, curr) => acc + curr.qty, 0);
   const summaryBarangOut = filteredTransactions.filter(t => t.type === 'OUT').reduce((acc, curr) => acc + curr.qty, 0);
 
-  const tableTransactions = transactions.filter(trx => {
+  const tableTransactions = filteredTransactions.filter(trx => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -306,10 +302,10 @@ export default function DashboardPage() {
 
   const handleExportCSV = () => {
     if (filteredTransactions.length === 0) return alert("Tidak ada data transaksi untuk diexport pada periode ini.");
-    const headers = ["Tanggal", "Waktu", "Tipe Transaksi", "Pihak Terkait", "Rincian Barang", "Total Barang", "Nilai Transaksi ($)", "Kas Pemerintah ($)", "Komisi Petugas ($)"];
+    const headers = ["Tanggal", "Waktu", "Tipe Transaksi", "Pihak Terkait", "Rincian Barang", "Total Barang", "Nilai Transaksi ($)", "Kas Pemerintah ($)", "Komisi Petugas ($)", "Nama Petugas"];
     const rows = filteredTransactions.map(trx => {
       const safeItem = `"${trx.item}"`; 
-      return `${trx.date},${trx.time},${trx.type === 'IN' ? 'Barang Masuk (Beli)' : 'Barang Keluar (Jual)'},"${trx.actor}",${safeItem},${trx.qty},${trx.total},${trx.gov},${trx.officerCut}`;
+      return `${trx.date},${trx.time},${trx.type === 'IN' ? 'Barang Masuk (Beli)' : 'Barang Keluar (Jual)'},"${trx.actor}",${safeItem},${trx.qty},${trx.total},${trx.gov},${trx.officerCut},"${trx.petugas || 'Sistem'}"`;
     });
     const csvContent = [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -388,21 +384,27 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* REKAPAN KEUANGAN & BARANG */}
+        {/* REKAPAN KEUANGAN & FILTERING */}
         <div>
-          <div className="flex flex-col sm:flex-row gap-2 mb-4 justify-between items-start sm:items-center">
-            <div className="flex gap-2">
+          <div className="flex flex-col md:flex-row gap-3 mb-4 justify-between items-start md:items-center">
+            <div className="flex flex-wrap items-center gap-2">
               <button onClick={() => setSummaryTab('HARI_INI')} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${summaryTab === 'HARI_INI' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>
                 <Calendar className="w-4 h-4" /> Hari Ini
               </button>
+              
               {isPetinggi && (
-                <button onClick={() => setSummaryTab('BULAN_INI')} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${summaryTab === 'BULAN_INI' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50 border border-amber-500/50' : 'bg-amber-900/10 text-amber-500/70 border border-amber-500/20 hover:bg-amber-900/20'}`}>
-                  <CalendarDays className="w-4 h-4" /> Rekap Bulan Ini
-                </button>
+                <>
+                  <button onClick={() => setSummaryTab('BULAN_INI')} className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${summaryTab === 'BULAN_INI' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50 border border-amber-500/50' : 'bg-amber-900/10 text-amber-500/70 border border-amber-500/20 hover:bg-amber-900/20'}`}>
+                    <CalendarDays className="w-4 h-4" /> Rekap Bulan Ini
+                  </button>
+                  <div className="flex items-center gap-2 bg-white/5 p-1.5 px-3 rounded-xl border border-white/10">
+                    <CalendarSearch className="w-4 h-4 text-slate-400" />
+                    <input type="date" value={filterDate} onChange={(e) => { setFilterDate(e.target.value); setSummaryTab('CUSTOM'); }} className="bg-transparent text-sm text-slate-200 outline-none cursor-pointer" />
+                  </div>
+                </>
               )}
             </div>
             
-            {/* Hanya Petinggi Kota yang BISA Download CSV */}
             {isPetinggi && (
               <button onClick={handleExportCSV} className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all bg-emerald-600/20 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-600/30 hover:shadow-lg hover:shadow-emerald-900/40 active:scale-95">
                 <Download className="w-4 h-4" /> Export Data (CSV)
@@ -413,7 +415,6 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
             <div className="bg-emerald-900/10 p-5 rounded-2xl border border-emerald-500/20">
               <div className="flex items-center gap-2 mb-2 text-emerald-400"><TrendingUp className="w-4 h-4" /><p className="text-xs font-medium">Kas Pemerintah (80%)</p></div>
-              {/* Hanya MENTERI dan ADMIN yang bisa lihat Kas Negara */}
               {isMenteriOrAdmin ? (
                 <p className={`text-3xl font-bold ${totalKasPemerintah >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{totalKasPemerintah >= 0 ? `+$${totalKasPemerintah.toLocaleString('en-US')}` : `-$${Math.abs(totalKasPemerintah).toLocaleString('en-US')}`}</p>
               ) : (
@@ -439,11 +440,15 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-6">
             
-            {/* FITUR KAS PRESIDEN: HANYA MENTERI DAN ADMIN YANG BISA SUNTIK DANA */}
+            {/* KAS PRESIDEN */}
             {isMenteriOrAdmin && (
               <div className="bg-[#151822]/80 backdrop-blur-md p-6 rounded-2xl border border-emerald-500/30 shadow-xl shadow-emerald-900/10">
                 <h2 className="text-lg font-bold text-emerald-400 mb-4 flex items-center gap-2"><Banknote className="w-5 h-5" /> Terima Kas Presiden</h2>
                 <form onSubmit={handleSimpanKasPresiden} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-emerald-400/80 font-medium uppercase tracking-wider">Pilih Tanggal Masuk</label>
+                    <input type="date" value={inputKasDate} onChange={(e) => setInputKasDate(e.target.value)} className="w-full bg-[#0b0e14] border border-emerald-700/50 p-3 rounded-xl text-emerald-200 outline-none focus:border-emerald-500 cursor-pointer" />
+                  </div>
                   <div className="space-y-1.5">
                     <label className="text-xs text-emerald-400/80 font-medium uppercase tracking-wider">Nominal Suntikan ($)</label>
                     <input type="number" min="1" required value={nominalPresiden} onChange={(e) => setNominalPresiden(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Contoh: 50000" className="w-full bg-[#0b0e14] border border-emerald-700/50 p-3 rounded-xl text-emerald-200 outline-none focus:border-emerald-500" />
@@ -459,10 +464,15 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* FORM TRANSAKSI BARANG */}
+            {/* TRANSAKSI BARANG */}
             <div className="bg-[#151822]/80 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-xl h-fit">
               <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2"><Plus className="w-4 h-4 text-cyan-400" /> Catat Transaksi Borongan</h2>
               <form onSubmit={handleSimpanTransaksi} className="space-y-4 flex flex-col">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-400 font-medium uppercase tracking-wider">Pilih Tanggal (Backdate)</label>
+                  <input type="date" value={inputDate} onChange={(e) => setInputDate(e.target.value)} className="w-full bg-[#0b0e14] border border-slate-700/50 p-3 rounded-xl text-slate-200 outline-none cursor-pointer" />
+                  <p className="text-[10px] text-slate-500 italic">Otomatis terisi tanggal hari ini untuk Staff operasional.</p>
+                </div>
                 <div className="space-y-1.5">
                   <label className="text-xs text-slate-400 font-medium uppercase tracking-wider">Tipe Transaksi</label>
                   <select value={trxType} onChange={handleTypeChange} className="w-full bg-[#0b0e14] border border-slate-700/50 p-3 rounded-xl text-slate-200 outline-none">
@@ -470,23 +480,19 @@ export default function DashboardPage() {
                     <option value="IN">Barang Masuk (Beli dari Warga)</option>
                   </select>
                 </div>
-
                 <div className="space-y-1.5">
                   <label className="text-xs text-slate-400 font-medium uppercase tracking-wider">Pilih Jenis Barang</label>
-                  {/* Harga Khusus Promo sekarang BISA DIAKSES OLEH SEMUA ROLE */}
                   <select value={itemName} onChange={(e) => setItemName(e.target.value)} className="w-full bg-[#0b0e14] border border-slate-700/50 p-3 rounded-xl text-slate-200 outline-none cursor-pointer">
                     {Object.keys(masterKomoditas).map((barang) => (<option key={barang} value={barang}>{barang}</option>))}
                     <option value="PROMO">🌟 Harga Khusus (Promo / Event)</option>
                   </select>
                 </div>
-
                 {isPromo && (
                   <div className="space-y-1.5 p-3 bg-amber-900/10 border border-amber-500/20 rounded-xl">
                     <label className="text-xs text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Nama Barang Custom</label>
                     <input type="text" value={customItemName} onChange={(e) => setCustomItemName(e.target.value)} placeholder="Contoh: Lelang Besi Tua" className="w-full mt-1 bg-[#0b0e14] border border-amber-700/50 p-2.5 rounded-lg text-amber-200" />
                   </div>
                 )}
-
                 <div className="space-y-1.5">
                   <label className="text-xs text-slate-400 font-medium uppercase tracking-wider">{trxType === 'IN' ? 'Sumber Barang' : 'Nama Pembeli / Bisnis'}</label>
                   {trxType === 'IN' ? (
@@ -497,7 +503,6 @@ export default function DashboardPage() {
                     </select>
                   )}
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs text-slate-400 font-medium uppercase tracking-wider">Jumlah</label>
@@ -543,7 +548,7 @@ export default function DashboardPage() {
             <div className="p-6 border-b border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 className="text-lg font-bold text-white">Buku Besar Transaksi DB</h2>
-                <p className="text-sm text-slate-400 mt-1">Data live dari PostgreSQL.</p>
+                <p className="text-sm text-slate-400 mt-1">Data live berdasarkan filter {summaryTab === 'HARI_INI' ? 'Hari Ini' : summaryTab === 'BULAN_INI' ? 'Bulan Ini' : 'Pilihan Custom'}.</p>
               </div>
               <div className="relative w-full sm:w-64">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -568,16 +573,19 @@ export default function DashboardPage() {
                 <tbody className="text-sm">
                   {isLoading ? (
                     <tr><td colSpan={6} className="p-8 text-center text-slate-500">Memuat data...</td></tr>
-                  ) : (tableTransactions.length === 0 && kasPresidenList.length === 0) ? (
-                    <tr><td colSpan={6} className="p-8 text-center text-slate-500">Tidak ada data ditemukan.</td></tr>
+                  ) : (tableTransactions.length === 0 && filteredKas.length === 0) ? (
+                    <tr><td colSpan={6} className="p-8 text-center text-slate-500">Tidak ada data ditemukan pada periode ini.</td></tr>
                   ) : (
                     <>
                       {/* Baris Khusus Suntikan Kas Presiden */}
-                      {kasPresidenList.map((kas, idx) => (
+                      {filteredKas.map((kas, idx) => (
                         <tr key={`kas-${idx}`} className="border-b border-emerald-500/20 bg-emerald-900/10 hover:bg-emerald-900/20 transition-colors">
                           <td className="p-4"><p className="text-emerald-300 font-medium">{kas.tanggal}</p><p className="text-emerald-500 text-xs mt-0.5">Uang Kas</p></td>
                           <td className="p-4"><span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><Banknote className="w-3 h-3" /> SUNTIKAN</span></td>
-                          <td className="p-4"><p className="font-bold text-emerald-200">{kas.keterangan}</p><p className="text-xs text-emerald-500 mt-0.5">Oleh: {kas.penerima}</p></td>
+                          <td className="p-4">
+                            <p className="font-bold text-emerald-200">{kas.keterangan}</p>
+                            <p className="text-xs text-emerald-500 mt-0.5">Oleh: {kas.penerima}</p>
+                          </td>
                           <td className="p-4 text-right"><p className="font-bold text-emerald-200">+${kas.jumlah.toLocaleString('en-US')}</p></td>
                           <td className="p-4 text-right"><span className="font-bold text-sm text-emerald-400">+${kas.jumlah.toLocaleString('en-US')}</span></td>
                           <td className="p-4 text-right"><span className="font-bold text-sm text-emerald-700/50">-</span></td>
@@ -589,7 +597,12 @@ export default function DashboardPage() {
                         <tr key={index} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                           <td className="p-4"><p className="text-slate-300 font-medium">{trx.date}</p><p className="text-slate-500 text-xs mt-0.5">{trx.time}</p></td>
                           <td className="p-4">{trx.type === 'OUT' ? <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20"><ArrowUp className="w-3 h-3" /> OUT</span> : <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><ArrowDown className="w-3 h-3" /> IN</span>}</td>
-                          <td className="p-4"><p className="font-bold text-slate-200">{trx.item}</p><p className="text-xs text-slate-500 mt-0.5">Total: {trx.qty} Unit • Pihak: {trx.actor}</p></td>
+                          <td className="p-4">
+                            <p className="font-bold text-slate-200">{trx.item}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">Pihak: {trx.actor}</p>
+                            {/* FITUR AKSES: HANYA PETINGGI YANG BISA MELIHAT SIAPA YANG INPUT */}
+                            {isPetinggi && <p className="text-[10px] text-cyan-500 mt-1.5 font-bold tracking-wider">INPUT BY: {trx.petugas || 'Sistem'}</p>}
+                          </td>
                           <td className="p-4 text-right"><p className="font-bold text-slate-200">${trx.total.toLocaleString('en-US')}</p></td>
                           <td className="p-4 text-right"><span className={`font-bold text-sm ${trx.gov > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{trx.gov > 0 ? `+$${trx.gov.toLocaleString('en-US')}` : `-$${Math.abs(trx.gov).toLocaleString('en-US')}`}</span></td>
                           <td className="p-4 text-right"><span className="font-bold text-sm text-blue-400">{trx.officerCut > 0 ? `+$${trx.officerCut.toLocaleString('en-US')}` : '+$0'}</span></td>
@@ -603,9 +616,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ==========================================
-            PUSAT MANAJEMEN PEGAWAI (HANYA UNTUK ADMIN PUSAT)
-            ========================================== */}
+        {/* PUSAT MANAJEMEN PEGAWAI (HANYA ADMIN) */}
         {isAdmin && (
           <div className="pt-8 border-t border-white/10 mt-10">
             <div className="mb-6">
@@ -614,7 +625,6 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* FORM TAMBAH PEGAWAI */}
               <div className="lg:col-span-1 bg-[#151822]/80 backdrop-blur-md p-6 rounded-2xl border border-rose-500/20 shadow-xl h-fit shadow-rose-900/10">
                 <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2"><UserPlus className="w-5 h-5 text-rose-400" /> Daftarkan Pengguna Baru</h2>
                 <form onSubmit={handleTambahPegawai} className="space-y-4">
@@ -645,7 +655,6 @@ export default function DashboardPage() {
                 </form>
               </div>
 
-              {/* TABEL DAFTAR PEGAWAI */}
               <div className="lg:col-span-2 bg-[#151822]/80 backdrop-blur-md rounded-2xl border border-white/5 shadow-xl overflow-hidden flex flex-col">
                 <div className="p-6 border-b border-white/5">
                   <h2 className="text-lg font-bold text-white flex items-center gap-2"><Users className="w-5 h-5 text-cyan-400" /> Daftar Akun Terdaftar</h2>

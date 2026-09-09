@@ -51,6 +51,7 @@ export async function saveTransaction(data: any, cartItems: Array<{item: string,
         data: {
           date: data.date, time: data.time, type: data.type, item: data.item, actor: data.actor,
           qty: data.qty, price: data.price, total: data.total, gov: data.gov, officerCut: data.officerCut,
+          petugas: data.petugas // <--- Menyimpan nama petugas ke database
         }
       });
       
@@ -75,22 +76,14 @@ export async function saveTransaction(data: any, cartItems: Array<{item: string,
   }
 }
 
-// ==========================================
-// FUNGSI SISTEM LOGIN & ROLE AKSES
-// ==========================================
 export async function loginUser(username: string, password: string) {
   let isSuccess = false;
   
   try {
-    // 1. Cari User di Database
     const user = await prisma.user.findUnique({ where: { username } });
-    
-    // 2. Validasi Password
     if (!user || user.password !== password) {
       return { success: false, message: 'ID Petugas atau Kata Sandi salah!' };
     }
-
-    // 3. Simpan Sesi di Cookies yang Aman untuk Vercel
     const cookieStore = await cookies();
     const isProduction = process.env.NODE_ENV === 'production';
     
@@ -118,7 +111,6 @@ export async function loginUser(username: string, password: string) {
     return { success: false, message: 'Terjadi kesalahan sistem server.' };
   }
 
-  // 4. SERVER-SIDE REDIRECT
   if (isSuccess) {
     redirect('/dashboard');
   }
@@ -133,7 +125,6 @@ export async function logoutUser() {
   return { success: true };
 }
 
-// Fungsi untuk membaca identitas pegawai yang sedang aktif
 export async function getActiveUser() {
   const cookieStore = await cookies();
   const role = cookieStore.get('userRole')?.value;
@@ -143,10 +134,6 @@ export async function getActiveUser() {
   
   return { role, name };
 }
-
-// ==========================================
-// FUNGSI MANAJEMEN PEGAWAI (KHUSUS ADMIN)
-// ==========================================
 
 export async function getAllUsers() {
   try {
@@ -190,10 +177,6 @@ export async function deleteUser(id: string) {
     return { success: false, message: 'Gagal menghapus pegawai.' };
   }
 }
-
-// ==========================================
-// FUNGSI UANG KAS SUNTIKAN PRESIDEN (BARU)
-// ==========================================
 
 export async function getKasNegara() {
   try {
