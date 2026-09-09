@@ -14,25 +14,26 @@ datasource db {
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
-  date        String
-  time        String
-  type        String
-  item        String
-  actor       String
-  qty         Int
-  price       Float
-  total       Float
-  gov         Float
-  officerCut  Float
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  date       String
+  time       String
+  type       String
+  item       String
+  actor      String
+  qty        Int
+  price      Float
+  total      Float
+  gov        Float
+  officerCut Float
+  petugas    String   @default("Sistem") // <--- Ini tempat yang BENAR!
+  createdAt  DateTime @default(now())
 }
 
 model WarehouseStock {
-  id          String   @id @default(cuid())
-  itemName    String   @unique
-  quantity    Int      @default(0)
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  itemName  String   @unique
+  quantity  Int      @default(0)
+  updatedAt DateTime @updatedAt
 }
 
 model User {
@@ -49,6 +50,5 @@ model KasNegara {
   jumlah     Float
   keterangan String
   penerima   String
-  petugas    String   @default("Sistem")
   createdAt  DateTime @default(now())
 }
