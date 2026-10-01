@@ -16,6 +16,7 @@ import {
 const masterKomoditas: Record<string, { buyPrice: number; sellInstansi: number; sellWarga: number; maxTerima: number; maxJual: number; stokMax: number; minHijau: number; }> = {
   'Anggur':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Bawang':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Bawang(NEW!!)':    { buyPrice: 850, sellInstansi: 950, sellWarga: 1050, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Beras':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Cabai':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Jagung':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
