@@ -362,7 +362,7 @@ export default function DashboardPage() {
             <h2 className="text-sm font-bold text-white uppercase tracking-widest">Kestabilan Stok Gudang (DB Real-time)</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-3">
-            {Object.keys(masterKomoditas).map((item) => {
+            {Object.keys(masterKomoditas).filter(item => item !== 'Bawang(NEW!!)').map((item) => {
               const qty = warehouseStock[item] || 0; 
               const reg = masterKomoditas[item];
               const isHijau = qty >= reg.minHijau;
