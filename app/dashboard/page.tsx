@@ -16,12 +16,13 @@ import {
 const masterKomoditas: Record<string, { buyPrice: number; sellInstansi: number; sellWarga: number; maxTerima: number; maxJual: number; stokMax: number; minHijau: number; }> = {
   'Anggur':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Bawang':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
-  'Bawang(NEW!!)':    { buyPrice: 850, sellInstansi: 950, sellWarga: 1050, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Bawang (NEW!!)':   { buyPrice: 850, sellInstansi: 950, sellWarga: 1050, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Beras':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Cabai':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Jagung':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Jeruk':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Strawberry':       { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Strawberry (NEW!!)':{ buyPrice: 500, sellInstansi: 600, sellWarga: 700, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Tomat':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Wortel':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Papan Kayu':       { buyPrice: 700, sellInstansi: 800,  sellWarga: 900,  maxTerima: 99999, maxJual: 99999, stokMax: 15000, minHijau: 3000 },
@@ -29,7 +30,7 @@ const masterKomoditas: Record<string, { buyPrice: number; sellInstansi: number; 
   'Susu':             { buyPrice: 700, sellInstansi: 800,  sellWarga: 900,  maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Batu Bersih':      { buyPrice: 900,  sellInstansi: 1000, sellWarga: 1100, maxTerima: 99999, maxJual: 99999, stokMax: 50000, minHijau: 5000 },
   'Recycle Package':  { buyPrice: 900,  sellInstansi: 1000, sellWarga: 1100, maxTerima: 99999, maxJual: 99999, stokMax: 50000, minHijau: 5000 },
-  'Package Ayam':     { buyPrice: 1000, sellInstansi: 1200, sellWarga: 1300, maxTerima: 99999, maxJual: 99999, stokMax: 10000, minHijau: 1000 },
+  'Package Ayam':     { buyPrice: 1000, sellInstansi: 1100, sellWarga: 1200, maxTerima: 99999, maxJual: 99999, stokMax: 10000, minHijau: 1000 },
   'Tembaga':          { buyPrice: 7500, sellInstansi: 8000, sellWarga: 8100, maxTerima: 99999, maxJual: 99999, stokMax: 10000, minHijau: 500 },
   'Baju':             { buyPrice: 900, sellInstansi: 1100, sellWarga: 1200, maxTerima: 99999, maxJual: 99999, stokMax: 15000, minHijau: 3000 },
   'Kulit':            { buyPrice: 800, sellInstansi: 1100, sellWarga: 1200, maxTerima: 99999, maxJual: 99999, stokMax: 5000, minHijau: 3000 }
@@ -187,8 +188,13 @@ export default function DashboardPage() {
     const res = await saveTransaction(newTrxData, cartItems);
 
     if (res.success) {
-      setTransactions(await getTransactions());
-      setWarehouseStock(await getWarehouseStock() || {});
+      const [updatedTransactions, updatedStock] = await Promise.all([
+        getTransactions(),
+        getWarehouseStock()
+      ]);
+      
+      setTransactions(updatedTransactions);
+      setWarehouseStock(updatedStock || {});
       setCartItems([]);
       alert("Transaksi berhasil dicatat!");
     } else {
@@ -362,7 +368,7 @@ export default function DashboardPage() {
             <h2 className="text-sm font-bold text-white uppercase tracking-widest">Kestabilan Stok Gudang (DB Real-time)</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-3">
-            {Object.keys(masterKomoditas).filter(item => item !== 'Bawang(NEW!!)').map((item) => {
+            {Object.keys(masterKomoditas).filter(item => item !== 'Bawang (NEW!!)' && 'Strawberry (NEW!!)').map((item) => {
               const qty = warehouseStock[item] || 0; 
               const reg = masterKomoditas[item];
               const isHijau = qty >= reg.minHijau;
