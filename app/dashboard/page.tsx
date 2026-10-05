@@ -49,14 +49,14 @@ export default function DashboardPage() {
   const [kasPresidenList, setKasPresidenList] = useState<any[]>([]); 
   
   const [summaryTab, setSummaryTab] = useState<'HARI_INI' | 'BULAN_INI' | 'CUSTOM'>('HARI_INI');
-  const [filterDate, setFilterDate] = useState(''); // State untuk filter tanggal manual
+  const [filterDate, setFilterDate] = useState(''); 
   
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
   // State Transaksi
   const todayStr = new Date().toLocaleDateString('en-CA');
-  const [inputDate, setInputDate] = useState(todayStr); // Input backdate
+  const [inputDate, setInputDate] = useState(todayStr); 
   const [trxType, setTrxType] = useState<'OUT' | 'IN'>('OUT');
   const [itemName, setItemName] = useState('Anggur');
   const [customItemName, setCustomItemName] = useState('');
@@ -174,7 +174,7 @@ export default function DashboardPage() {
     const officerCut = trxType === 'OUT' ? totalKeseluruhan * 0.2 : 0;
     
     const newTrxData = {
-      date: inputDate, // Menggunakan tanggal dari input
+      date: inputDate, 
       time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       type: trxType,
       item: cartItems.map(c => `${c.qty}x ${c.item}`).join(', '),
@@ -182,7 +182,7 @@ export default function DashboardPage() {
       qty: cartItems.reduce((acc, curr) => acc + curr.qty, 0),
       price: cartItems[0].price,
       total: totalKeseluruhan, gov, officerCut,
-      petugas: activeUser?.name || 'Sistem' // Menyimpan siapa yang input
+      petugas: activeUser?.name || 'Sistem' 
     };
 
     const res = await saveTransaction(newTrxData, cartItems);
@@ -210,7 +210,7 @@ export default function DashboardPage() {
     setIsSavingKas(true);
     
     const data = {
-      tanggal: inputKasDate, // Menggunakan input manual jika diubah
+      tanggal: inputKasDate, 
       jumlah: Number(nominalPresiden),
       keterangan: ketPresiden || 'Suntikan Dana Presiden',
       penerima: activeUser?.name || 'Menteri'
@@ -382,7 +382,7 @@ export default function DashboardPage() {
             <h2 className="text-sm font-bold text-white uppercase tracking-widest">Kestabilan Stok Gudang (DB Real-time)</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-3">
-            {Object.keys(masterKomoditas).filter(item => item !== 'Bawang (NEW!!)' && 'Strawberry (NEW!!)').map((item) => {
+            {Object.keys(masterKomoditas).filter(item => item !== 'Bawang (NEW!!)' && item !== 'Strawberry (NEW!!)').map((item) => {
               const qty = warehouseStock[item] || 0; 
               const reg = masterKomoditas[item];
               const isHijau = qty >= reg.minHijau;
@@ -583,66 +583,66 @@ export default function DashboardPage() {
             </div>
             
             <div className="overflow-y-auto max-h-[800px]">
-              <table className="w-full text-left border-collapse min-w-max relative">
+              {/* MODIFIKASI: Hapus min-w-max agar tabel tidak menembus layar */}
+              <table className="w-full text-left border-collapse relative">
                 <thead className="sticky top-0 bg-[#151822] z-10 shadow-sm">
                   <tr className="text-[10px] uppercase tracking-widest text-slate-500 font-bold border-b border-white/5">
-                    <th className="p-4">Waktu</th>
-                    <th className="p-4">Tipe</th>
-                    <th className="p-4">Info Borongan / Keterangan</th>
-                    <th className="p-4 text-right">Nilai / Transaksi</th>
-                    <th className="p-4 text-right">Kas Gov</th>
-                    <th className="p-4 text-right">Komisi</th>
-                    {/* MODIFIKASI: Kolom Aksi Khusus Petinggi */}
-                    <th className="p-4 text-center">Aksi</th>
+                    {/* MODIFIKASI: Ubah padding p-4 menjadi px-2 py-3 agar lebih muat dan tidak horizontal scroll */}
+                    <th className="px-2 py-3">Waktu</th>
+                    <th className="px-2 py-3">Tipe</th>
+                    <th className="px-2 py-3">Info Borongan / Keterangan</th>
+                    <th className="px-2 py-3 text-right">Nilai / Transaksi</th>
+                    <th className="px-2 py-3 text-right">Kas Gov</th>
+                    <th className="px-2 py-3 text-right">Komisi</th>
+                    <th className="px-2 py-3 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
                   {isLoading ? (
-                    <tr><td colSpan={7} className="p-8 text-center text-slate-500">Memuat data...</td></tr>
+                    <tr><td colSpan={7} className="px-2 py-8 text-center text-slate-500">Memuat data...</td></tr>
                   ) : (tableTransactions.length === 0 && filteredKas.length === 0) ? (
-                    <tr><td colSpan={7} className="p-8 text-center text-slate-500">Tidak ada data ditemukan pada periode ini.</td></tr>
+                    <tr><td colSpan={7} className="px-2 py-8 text-center text-slate-500">Tidak ada data ditemukan pada periode ini.</td></tr>
                   ) : (
                     <>
                       {/* Baris Khusus Suntikan Kas Presiden */}
                       {filteredKas.map((kas, idx) => (
                         <tr key={`kas-${idx}`} className="border-b border-emerald-500/20 bg-emerald-900/10 hover:bg-emerald-900/20 transition-colors">
-                          <td className="p-4"><p className="text-emerald-300 font-medium">{kas.tanggal}</p><p className="text-emerald-500 text-xs mt-0.5">Uang Kas</p></td>
-                          <td className="p-4"><span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><Banknote className="w-3 h-3" /> SUNTIKAN</span></td>
-                          <td className="p-4">
+                          <td className="px-2 py-3"><p className="text-emerald-300 font-medium">{kas.tanggal}</p><p className="text-emerald-500 text-xs mt-0.5">Uang Kas</p></td>
+                          <td className="px-2 py-3"><span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><Banknote className="w-3 h-3" /> SUNTIKAN</span></td>
+                          <td className="px-2 py-3">
                             <p className="font-bold text-emerald-200">{kas.keterangan}</p>
                             <p className="text-xs text-emerald-500 mt-0.5">Oleh: {kas.penerima}</p>
                           </td>
-                          <td className="p-4 text-right"><p className="font-bold text-emerald-200">+${kas.jumlah.toLocaleString('en-US')}</p></td>
-                          <td className="p-4 text-right"><span className="font-bold text-sm text-emerald-400">+${kas.jumlah.toLocaleString('en-US')}</span></td>
-                          <td className="p-4 text-right"><span className="font-bold text-sm text-emerald-700/50">-</span></td>
-                          <td className="p-4 text-center text-slate-500 text-xs">-</td>
+                          <td className="px-2 py-3 text-right"><p className="font-bold text-emerald-200">+${kas.jumlah.toLocaleString('en-US')}</p></td>
+                          <td className="px-2 py-3 text-right"><span className="font-bold text-sm text-emerald-400">+${kas.jumlah.toLocaleString('en-US')}</span></td>
+                          <td className="px-2 py-3 text-right"><span className="font-bold text-sm text-emerald-700/50">-</span></td>
+                          <td className="px-2 py-3 text-center text-slate-500 text-xs">-</td>
                         </tr>
                       ))}
 
                       {/* Baris Transaksi Reguler */}
                       {tableTransactions.map((trx, index) => (
                         <tr key={index} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                          <td className="p-4"><p className="text-slate-300 font-medium">{trx.date}</p><p className="text-slate-500 text-xs mt-0.5">{trx.time}</p></td>
-                          <td className="p-4">{trx.type === 'OUT' ? <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20"><ArrowUp className="w-3 h-3" /> OUT</span> : <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><ArrowDown className="w-3 h-3" /> IN</span>}</td>
-                          <td className="p-4">
+                          {/* MODIFIKASI: Ubah padding p-4 menjadi px-2 py-3 */}
+                          <td className="px-2 py-3"><p className="text-slate-300 font-medium">{trx.date}</p><p className="text-slate-500 text-xs mt-0.5">{trx.time}</p></td>
+                          <td className="px-2 py-3">{trx.type === 'OUT' ? <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20"><ArrowUp className="w-3 h-3" /> OUT</span> : <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><ArrowDown className="w-3 h-3" /> IN</span>}</td>
+                          <td className="px-2 py-3">
                             <p className="font-bold text-slate-200">{trx.item}</p>
                             <p className="text-xs text-slate-500 mt-0.5">Pihak: {trx.actor}</p>
-                            {/* FITUR AKSES: HANYA PETINGGI YANG BISA MELIHAT SIAPA YANG INPUT */}
                             {isPetinggi && <p className="text-[10px] text-cyan-500 mt-1.5 font-bold tracking-wider">INPUT BY: {trx.petugas || 'Sistem'}</p>}
                           </td>
-                          <td className="p-4 text-right"><p className="font-bold text-slate-200">${trx.total.toLocaleString('en-US')}</p></td>
-                          <td className="p-4 text-right"><span className={`font-bold text-sm ${trx.gov > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{trx.gov > 0 ? `+$${trx.gov.toLocaleString('en-US')}` : `-$${Math.abs(trx.gov).toLocaleString('en-US')}`}</span></td>
-                          <td className="p-4 text-right"><span className="font-bold text-sm text-blue-400">{trx.officerCut > 0 ? `+$${trx.officerCut.toLocaleString('en-US')}` : '+$0'}</span></td>
-                          {/* MODIFIKASI: Action buttons Edit (Wamen, Menteri, Admin) & Hapus (Menteri, Admin) */}
-                          <td className="p-4">
-                            <div className="flex items-center justify-center gap-2">
+                          <td className="px-2 py-3 text-right"><p className="font-bold text-slate-200">${trx.total.toLocaleString('en-US')}</p></td>
+                          <td className="px-2 py-3 text-right"><span className={`font-bold text-sm ${trx.gov > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{trx.gov > 0 ? `+$${trx.gov.toLocaleString('en-US')}` : `-$${Math.abs(trx.gov).toLocaleString('en-US')}`}</span></td>
+                          <td className="px-2 py-3 text-right"><span className="font-bold text-sm text-blue-400">{trx.officerCut > 0 ? `+$${trx.officerCut.toLocaleString('en-US')}` : '+$0'}</span></td>
+                          <td className="px-2 py-3">
+                            <div className="flex items-center justify-center gap-1">
                               {isPetinggi && (
-                                <button onClick={() => handleEditTransaksi(trx)} className="p-2 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 rounded-lg transition-colors" title="Edit Transaksi">
+                                <button onClick={() => handleEditTransaksi(trx)} className="p-1.5 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 rounded-lg transition-colors" title="Edit Transaksi">
                                   <Edit className="w-4 h-4" />
                                 </button>
                               )}
                               {isMenteriOrAdmin && (
-                                <button onClick={() => handleHapusTransaksi(trx.id)} className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors" title="Hapus Transaksi">
+                                <button onClick={() => handleHapusTransaksi(trx.id)} className="p-1.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors" title="Hapus Transaksi">
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                               )}
@@ -704,13 +704,13 @@ export default function DashboardPage() {
                   <p className="text-sm text-slate-400 mt-1">Kelola seluruh izin akses petugas dan petinggi kota di sini.</p>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-max">
+                  <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="text-[10px] uppercase tracking-widest text-slate-500 font-bold border-b border-white/5 bg-white/[0.02]">
-                        <th className="p-4">Nama Pegawai</th>
-                        <th className="p-4">ID Akses (Username)</th>
-                        <th className="p-4">Jabatan / Level</th>
-                        <th className="p-4 text-center">Tindakan Khusus</th>
+                        <th className="px-4 py-3">Nama Pegawai</th>
+                        <th className="px-4 py-3">ID Akses (Username)</th>
+                        <th className="px-4 py-3">Jabatan / Level</th>
+                        <th className="px-4 py-3 text-center">Tindakan Khusus</th>
                       </tr>
                     </thead>
                     <tbody className="text-sm">
@@ -719,9 +719,9 @@ export default function DashboardPage() {
                       ) : (
                         usersList.map((u, index) => (
                           <tr key={u.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                            <td className="p-4 font-bold text-slate-200">{u.name}</td>
-                            <td className="p-4 text-slate-400">@{u.username}</td>
-                            <td className="p-4">
+                            <td className="px-4 py-3 font-bold text-slate-200">{u.name}</td>
+                            <td className="px-4 py-3 text-slate-400">@{u.username}</td>
+                            <td className="px-4 py-3">
                               <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
                                 u.role === 'ADMIN' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
                                 u.role === 'MENTERI' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 
@@ -731,7 +731,7 @@ export default function DashboardPage() {
                                 {u.role}
                               </span>
                             </td>
-                            <td className="p-4">
+                            <td className="px-4 py-3">
                               <div className="flex items-center justify-center gap-2">
                                 <button onClick={() => handleResetPassword(u.id, u.name)} title="Ganti Sandi" className="p-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors">
                                   <Key className="w-4 h-4" />
