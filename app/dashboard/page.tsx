@@ -36,13 +36,20 @@ const masterKomoditas: Record<string, { buyPrice: number; sellInstansi: number; 
   'Package Ayam':     { buyPrice: 1000, sellInstansi: 1100, sellWarga: 1200, maxTerima: 99999, maxJual: 99999, stokMax: 10000, minHijau: 1000 },
 };
 
+// FUNGSI KHUSUS UNTUK MEMANIPULASI TAMPILAN NAMA BARANG DI LAYAR (TANPA MERUSAK DB)
 const formatDisplayName = (text: string) => {
   if (!text) return text;
   let res = text;
+  
+  // 1. Amankan yang (NEW!!) menjadi placeholder sementara
   res = res.split('Bawang (NEW!!)').join('__BWG_NEW__');
   res = res.split('Strawberry (NEW!!)').join('__STR_NEW__');
+  
+  // 2. Ubah teks lama yang asli menjadi "(Old)"
   res = res.split('Bawang').join('Bawang (Old)');
   res = res.split('Strawberry').join('Strawberry (Old)');
+  
+  // 3. Kembalikan placeholder yang NEW menjadi nama standar yang bersih
   res = res.split('__BWG_NEW__').join('Bawang');
   res = res.split('__STR_NEW__').join('Strawberry');
   
@@ -174,6 +181,7 @@ export default function DashboardPage() {
         const baseName = cart.item.replace('[PROMO] ', '');
         const currentStock = warehouseStock[baseName] || 0; 
         if (!cart.item.includes('PROMO') && currentStock < cart.qty) {
+          // Alert menggunakan format nama yg bersih
           return alert(`❌ STOK TIDAK CUKUP!\nSisa ${formatDisplayName(baseName)}: ${currentStock.toLocaleString('id-ID')}`);
         }
       }
@@ -190,7 +198,7 @@ export default function DashboardPage() {
       date: inputDate, 
       time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       type: trxType,
-      item: cartItems.map(c => `${c.qty}x ${c.item}`).join(', '), 
+      item: cartItems.map(c => `${c.qty}x ${c.item}`).join(', '), // Database tetap simpan tulisan asli
       actor: actorName,
       qty: cartItems.reduce((acc, curr) => acc + curr.qty, 0),
       price: cartItems[0].price,
@@ -209,7 +217,7 @@ export default function DashboardPage() {
       setTransactions(updatedTransactions);
       setWarehouseStock(updatedStock || {});
       setCartItems([]);
-      alert("Transaksi berhasil dicatat!");
+      // Alert dihapus agar progress lebih cepat dan tanpa hambatan pop-up
     } else {
       alert("Terjadi kesalahan sistem!");
     }
@@ -231,7 +239,7 @@ export default function DashboardPage() {
 
     const res = await addKasNegara(data);
     if (res.success) {
-      alert("Dana dari Presiden berhasil masuk ke Kas!");
+      // Menghapus alert agar proses lebih cepat
       setNominalPresiden(''); setKetPresiden('');
       setKasPresidenList(await getKasNegara());
     } else alert("Gagal menyimpan data kas.");
@@ -243,7 +251,7 @@ export default function DashboardPage() {
     setIsSavingUser(true);
     const res = await createUser({ username: newUsername, name: newName, password: newPassword, role: newRole });
     if (res.success) {
-      alert("Berhasil mendaftarkan pegawai baru!");
+      // Menghapus alert agar proses lebih cepat
       setNewUsername(''); setNewName(''); setNewPassword(''); setNewRole('STAFF');
       setUsersList(await getAllUsers());
     } else {
@@ -256,8 +264,11 @@ export default function DashboardPage() {
     const newPass = prompt(`Masukkan Kata Sandi BARU untuk ${name}:`);
     if (!newPass) return;
     const res = await resetUserPassword(id, newPass);
-    if (res.success) alert(`Sandi ${name} berhasil direset!`);
-    else alert(res.message);
+    if (res.success) {
+      // Dikosongkan agar tidak ada pop up sukses
+    } else {
+      alert(res.message);
+    }
   };
 
   const handleHapusPegawai = async (id: string, name: string) => {
@@ -276,6 +287,7 @@ export default function DashboardPage() {
   };
 
   const handleEditTransaksi = async (trx: any) => {
+    // Menampilkan nama barang bersih di alert edit
     alert(`Fitur Edit Transaksi untuk: ${formatDisplayName(trx.item)}\n(Backend API Edit belum dibuat. Silakan hubungkan dengan Server Action).`);
   };
 
@@ -326,7 +338,7 @@ export default function DashboardPage() {
     const q = searchQuery.toLowerCase();
     return (
       trx.actor.toLowerCase().includes(q) || 
-      formatDisplayName(trx.item).toLowerCase().includes(q) || 
+      formatDisplayName(trx.item).toLowerCase().includes(q) || // Search bekerja menggunakan display name  
       trx.type.toLowerCase().includes(q)
     );
   });
@@ -335,6 +347,7 @@ export default function DashboardPage() {
     if (filteredTransactions.length === 0) return alert("Tidak ada data transaksi untuk diexport pada periode ini.");
     const headers = ["Tanggal", "Waktu", "Tipe Transaksi", "Pihak Terkait", "Rincian Barang", "Total Barang", "Nilai Transaksi ($)", "Kas Pemerintah ($)", "Komisi Petugas ($)", "Nama Petugas"];
     const rows = filteredTransactions.map(trx => {
+      // Export CSV menggunakan format nama yang bersih
       const safeItem = `"${formatDisplayName(trx.item)}"`; 
       return `${trx.date},${trx.time},${trx.type === 'IN' ? 'Barang Masuk (Beli)' : 'Barang Keluar (Jual)'},"${trx.actor}",${safeItem},${trx.qty},${trx.total},${trx.gov},${trx.officerCut},"${trx.petugas || 'Sistem'}"`;
     });
@@ -390,6 +403,7 @@ export default function DashboardPage() {
             <h2 className="text-sm font-bold text-white uppercase tracking-widest">Kestabilan Stok Gudang (DB Real-time)</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-3">
+            {/* Sembunyikan Bawang dan Strawberry versi lama dari panel Stok Gudang */}
             {Object.keys(masterKomoditas)
               .filter(item => item !== 'Bawang' && item !== 'Strawberry')
               .map((item) => {
@@ -399,7 +413,7 @@ export default function DashboardPage() {
               const isPenuh = qty >= reg.stokMax;
               const isKrisis = qty < (reg.minHijau / 2);
               
-              const displayName = formatDisplayName(item); 
+              const displayName = formatDisplayName(item); // Terapkan nama khusus UI
 
               return (
                 <div key={item} className="bg-[#0b0e14] border border-white/5 p-3 rounded-xl flex flex-col justify-between">
