@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { 
   Landmark, ArrowUp, ArrowDown, TrendingUp, PieChart, User, Plus, LogOut, 
   AlertCircle, Package, Calendar, CalendarDays, AlertTriangle, ShieldAlert, ShieldCheck, 
-  Download, Search, UserPlus, Users, Trash2, Key, Banknote, CalendarSearch
+  Download, Search, UserPlus, Users, Trash2, Key, Banknote, CalendarSearch, Edit
 } from 'lucide-react';
 
 import { 
@@ -14,24 +14,26 @@ import {
 } from '../actions';
 
 const masterKomoditas: Record<string, { buyPrice: number; sellInstansi: number; sellWarga: number; maxTerima: number; maxJual: number; stokMax: number; minHijau: number; }> = {
-  'Anggur':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
-  'Bawang':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
-  'Beras':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
-  'Cabai':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
-  'Jagung':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
-  'Jeruk':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
-  'Strawberry':       { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
-  'Tomat':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
-  'Wortel':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
-  'Papan Kayu':       { buyPrice: 700, sellInstansi: 800,  sellWarga: 900,  maxTerima: 99999, maxJual: 99999, stokMax: 15000, minHijau: 3000 },
-  'Drum Oil':         { buyPrice: 700, sellInstansi: 800,  sellWarga: 900,  maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
-  'Susu':             { buyPrice: 700, sellInstansi: 800,  sellWarga: 900,  maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Batu Bersih':      { buyPrice: 900,  sellInstansi: 1000, sellWarga: 1100, maxTerima: 99999, maxJual: 99999, stokMax: 50000, minHijau: 5000 },
   'Recycle Package':  { buyPrice: 900,  sellInstansi: 1000, sellWarga: 1100, maxTerima: 99999, maxJual: 99999, stokMax: 50000, minHijau: 5000 },
-  'Package Ayam':     { buyPrice: 1000, sellInstansi: 1200, sellWarga: 1300, maxTerima: 99999, maxJual: 99999, stokMax: 10000, minHijau: 1000 },
-  'Tembaga':          { buyPrice: 7500, sellInstansi: 8000, sellWarga: 8100, maxTerima: 99999, maxJual: 99999, stokMax: 10000, minHijau: 500 },
   'Baju':             { buyPrice: 900, sellInstansi: 1100, sellWarga: 1200, maxTerima: 99999, maxJual: 99999, stokMax: 15000, minHijau: 3000 },
-  'Kulit':            { buyPrice: 800, sellInstansi: 1100, sellWarga: 1200, maxTerima: 99999, maxJual: 99999, stokMax: 5000, minHijau: 3000 }
+  'Kulit':            { buyPrice: 800, sellInstansi: 1100, sellWarga: 1200, maxTerima: 99999, maxJual: 99999, stokMax: 5000, minHijau: 3000 },
+  'Tembaga':          { buyPrice: 7500, sellInstansi: 8000, sellWarga: 8100, maxTerima: 99999, maxJual: 99999, stokMax: 10000, minHijau: 500 },
+  'Anggur':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Strawberry':       { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Strawberry (NEW!!)':{ buyPrice: 500, sellInstansi: 600, sellWarga: 700, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Bawang':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Bawang (NEW!!)':   { buyPrice: 850, sellInstansi: 950, sellWarga: 1050, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Susu':             { buyPrice: 700, sellInstansi: 800,  sellWarga: 900,  maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Cabai':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Papan Kayu':       { buyPrice: 700, sellInstansi: 800,  sellWarga: 900,  maxTerima: 99999, maxJual: 99999, stokMax: 15000, minHijau: 3000 },
+  'Drum Oil':         { buyPrice: 700, sellInstansi: 800,  sellWarga: 900,  maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Beras':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Wortel':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Tomat':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Jagung':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Jeruk':            { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
+  'Package Ayam':     { buyPrice: 1000, sellInstansi: 1100, sellWarga: 1200, maxTerima: 99999, maxJual: 99999, stokMax: 10000, minHijau: 1000 },
 };
 
 export default function DashboardPage() {
@@ -186,8 +188,13 @@ export default function DashboardPage() {
     const res = await saveTransaction(newTrxData, cartItems);
 
     if (res.success) {
-      setTransactions(await getTransactions());
-      setWarehouseStock(await getWarehouseStock() || {});
+      const [updatedTransactions, updatedStock] = await Promise.all([
+        getTransactions(),
+        getWarehouseStock()
+      ]);
+      
+      setTransactions(updatedTransactions);
+      setWarehouseStock(updatedStock || {});
       setCartItems([]);
       alert("Transaksi berhasil dicatat!");
     } else {
@@ -252,6 +259,20 @@ export default function DashboardPage() {
     if (confirm("Anda yakin ingin keluar dari sistem?")) {
       await logoutUser();
       window.location.href = '/login';
+    }
+  };
+
+  // --- ACTIONS TRANSAKSI (KHUSUS PETINGGI) ---
+  const handleEditTransaksi = async (trx: any) => {
+    // TODO: Buka modal edit / integrasikan dengan server action updateTransaction
+    alert(`Fitur Edit Transaksi untuk: ${trx.item}\n(Backend API Edit belum dibuat. Silakan hubungkan dengan Server Action).`);
+  };
+
+  const handleHapusTransaksi = async (id: string) => {
+    // Jika tidak ada ID karena data dari backend belum menyertakan id, handle dengan peringatan
+    if (confirm("⚠️ PERINGATAN!\nApakah Anda yakin ingin menghapus transaksi ini permanen dari DB?")) {
+      // TODO: Integrasikan dengan server action deleteTransaction
+      alert(`Fitur Hapus Transaksi (ID: ${id || 'Tidak diketahui'})\n(Backend API Hapus belum dibuat. Silakan hubungkan dengan Server Action).`);
     }
   };
 
@@ -361,7 +382,7 @@ export default function DashboardPage() {
             <h2 className="text-sm font-bold text-white uppercase tracking-widest">Kestabilan Stok Gudang (DB Real-time)</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-3">
-            {Object.keys(masterKomoditas).map((item) => {
+            {Object.keys(masterKomoditas).filter(item => item !== 'Bawang (NEW!!)' && 'Strawberry (NEW!!)').map((item) => {
               const qty = warehouseStock[item] || 0; 
               const reg = masterKomoditas[item];
               const isHijau = qty >= reg.minHijau;
@@ -472,8 +493,9 @@ export default function DashboardPage() {
               <form onSubmit={handleSimpanTransaksi} className="space-y-4 flex flex-col">
                 <div className="space-y-1.5">
                   <label className="text-xs text-slate-400 font-medium uppercase tracking-wider">Pilih Tanggal (Backdate)</label>
-                  <input type="date" value={inputDate} onChange={(e) => setInputDate(e.target.value)} className="w-full bg-[#0b0e14] border border-slate-700/50 p-3 rounded-xl text-slate-200 outline-none cursor-pointer" />
-                  <p className="text-[10px] text-slate-500 italic">Otomatis terisi tanggal hari ini untuk Staff operasional.</p>
+                  {/* MODIFIKASI: Input Date dikunci untuk staff biasa */}
+                  <input type="date" value={inputDate} onChange={(e) => setInputDate(e.target.value)} disabled={!isPetinggi} className={`w-full bg-[#0b0e14] border border-slate-700/50 p-3 rounded-xl text-slate-200 outline-none ${!isPetinggi ? 'cursor-not-allowed opacity-60' : 'cursor-pointer focus:border-cyan-500'}`} />
+                  <p className="text-[10px] text-slate-500 italic">{isPetinggi ? 'Akses Petinggi: Anda dapat melakukan backdate.' : 'Otomatis terisi tanggal hari ini untuk Staff operasional.'}</p>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs text-slate-400 font-medium uppercase tracking-wider">Tipe Transaksi</label>
@@ -570,13 +592,15 @@ export default function DashboardPage() {
                     <th className="p-4 text-right">Nilai / Transaksi</th>
                     <th className="p-4 text-right">Kas Gov</th>
                     <th className="p-4 text-right">Komisi</th>
+                    {/* MODIFIKASI: Kolom Aksi Khusus Petinggi */}
+                    <th className="p-4 text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
                   {isLoading ? (
-                    <tr><td colSpan={6} className="p-8 text-center text-slate-500">Memuat data...</td></tr>
+                    <tr><td colSpan={7} className="p-8 text-center text-slate-500">Memuat data...</td></tr>
                   ) : (tableTransactions.length === 0 && filteredKas.length === 0) ? (
-                    <tr><td colSpan={6} className="p-8 text-center text-slate-500">Tidak ada data ditemukan pada periode ini.</td></tr>
+                    <tr><td colSpan={7} className="p-8 text-center text-slate-500">Tidak ada data ditemukan pada periode ini.</td></tr>
                   ) : (
                     <>
                       {/* Baris Khusus Suntikan Kas Presiden */}
@@ -591,6 +615,7 @@ export default function DashboardPage() {
                           <td className="p-4 text-right"><p className="font-bold text-emerald-200">+${kas.jumlah.toLocaleString('en-US')}</p></td>
                           <td className="p-4 text-right"><span className="font-bold text-sm text-emerald-400">+${kas.jumlah.toLocaleString('en-US')}</span></td>
                           <td className="p-4 text-right"><span className="font-bold text-sm text-emerald-700/50">-</span></td>
+                          <td className="p-4 text-center text-slate-500 text-xs">-</td>
                         </tr>
                       ))}
 
@@ -608,6 +633,22 @@ export default function DashboardPage() {
                           <td className="p-4 text-right"><p className="font-bold text-slate-200">${trx.total.toLocaleString('en-US')}</p></td>
                           <td className="p-4 text-right"><span className={`font-bold text-sm ${trx.gov > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{trx.gov > 0 ? `+$${trx.gov.toLocaleString('en-US')}` : `-$${Math.abs(trx.gov).toLocaleString('en-US')}`}</span></td>
                           <td className="p-4 text-right"><span className="font-bold text-sm text-blue-400">{trx.officerCut > 0 ? `+$${trx.officerCut.toLocaleString('en-US')}` : '+$0'}</span></td>
+                          {/* MODIFIKASI: Action buttons Edit (Wamen, Menteri, Admin) & Hapus (Menteri, Admin) */}
+                          <td className="p-4">
+                            <div className="flex items-center justify-center gap-2">
+                              {isPetinggi && (
+                                <button onClick={() => handleEditTransaksi(trx)} className="p-2 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 rounded-lg transition-colors" title="Edit Transaksi">
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                              )}
+                              {isMenteriOrAdmin && (
+                                <button onClick={() => handleHapusTransaksi(trx.id)} className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors" title="Hapus Transaksi">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                              {!isPetinggi && <span className="text-xs text-slate-500">-</span>}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </>
