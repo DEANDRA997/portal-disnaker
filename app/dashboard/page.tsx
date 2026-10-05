@@ -36,6 +36,19 @@ const masterKomoditas: Record<string, { buyPrice: number; sellInstansi: number; 
   'Package Ayam':     { buyPrice: 1000, sellInstansi: 1100, sellWarga: 1200, maxTerima: 99999, maxJual: 99999, stokMax: 10000, minHijau: 1000 },
 };
 
+const formatDisplayName = (text: string) => {
+  if (!text) return text;
+  let res = text;
+  res = res.split('Bawang (NEW!!)').join('__BWG_NEW__');
+  res = res.split('Strawberry (NEW!!)').join('__STR_NEW__');
+  res = res.split('Bawang').join('Bawang (Old)');
+  res = res.split('Strawberry').join('Strawberry (Old)');
+  res = res.split('__BWG_NEW__').join('Bawang');
+  res = res.split('__STR_NEW__').join('Strawberry');
+  
+  return res;
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
@@ -161,7 +174,7 @@ export default function DashboardPage() {
         const baseName = cart.item.replace('[PROMO] ', '');
         const currentStock = warehouseStock[baseName] || 0; 
         if (!cart.item.includes('PROMO') && currentStock < cart.qty) {
-          return alert(`❌ STOK TIDAK CUKUP!\nSisa ${baseName}: ${currentStock.toLocaleString('id-ID')}`);
+          return alert(`❌ STOK TIDAK CUKUP!\nSisa ${formatDisplayName(baseName)}: ${currentStock.toLocaleString('id-ID')}`);
         }
       }
     }
@@ -177,7 +190,7 @@ export default function DashboardPage() {
       date: inputDate, 
       time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       type: trxType,
-      item: cartItems.map(c => `${c.qty}x ${c.item}`).join(', '),
+      item: cartItems.map(c => `${c.qty}x ${c.item}`).join(', '), 
       actor: actorName,
       qty: cartItems.reduce((acc, curr) => acc + curr.qty, 0),
       price: cartItems[0].price,
@@ -262,16 +275,12 @@ export default function DashboardPage() {
     }
   };
 
-  // --- ACTIONS TRANSAKSI (KHUSUS PETINGGI) ---
   const handleEditTransaksi = async (trx: any) => {
-    // TODO: Buka modal edit / integrasikan dengan server action updateTransaction
-    alert(`Fitur Edit Transaksi untuk: ${trx.item}\n(Backend API Edit belum dibuat. Silakan hubungkan dengan Server Action).`);
+    alert(`Fitur Edit Transaksi untuk: ${formatDisplayName(trx.item)}\n(Backend API Edit belum dibuat. Silakan hubungkan dengan Server Action).`);
   };
 
   const handleHapusTransaksi = async (id: string) => {
-    // Jika tidak ada ID karena data dari backend belum menyertakan id, handle dengan peringatan
     if (confirm("⚠️ PERINGATAN!\nApakah Anda yakin ingin menghapus transaksi ini permanen dari DB?")) {
-      // TODO: Integrasikan dengan server action deleteTransaction
       alert(`Fitur Hapus Transaksi (ID: ${id || 'Tidak diketahui'})\n(Backend API Hapus belum dibuat. Silakan hubungkan dengan Server Action).`);
     }
   };
@@ -288,7 +297,6 @@ export default function DashboardPage() {
   const isPetinggi = activeUser.role === 'MENTERI' || activeUser.role === 'WAMEN' || isAdmin;
   const isMenteriOrAdmin = activeUser.role === 'MENTERI' || isAdmin; 
 
-  // Kalkulasi Filter Data
   const currentMonthStr = todayStr.substring(0, 7);
 
   const filteredTransactions = transactions.filter(trx => {
@@ -318,7 +326,7 @@ export default function DashboardPage() {
     const q = searchQuery.toLowerCase();
     return (
       trx.actor.toLowerCase().includes(q) || 
-      trx.item.toLowerCase().includes(q) ||  
+      formatDisplayName(trx.item).toLowerCase().includes(q) || 
       trx.type.toLowerCase().includes(q)
     );
   });
@@ -327,7 +335,7 @@ export default function DashboardPage() {
     if (filteredTransactions.length === 0) return alert("Tidak ada data transaksi untuk diexport pada periode ini.");
     const headers = ["Tanggal", "Waktu", "Tipe Transaksi", "Pihak Terkait", "Rincian Barang", "Total Barang", "Nilai Transaksi ($)", "Kas Pemerintah ($)", "Komisi Petugas ($)", "Nama Petugas"];
     const rows = filteredTransactions.map(trx => {
-      const safeItem = `"${trx.item}"`; 
+      const safeItem = `"${formatDisplayName(trx.item)}"`; 
       return `${trx.date},${trx.time},${trx.type === 'IN' ? 'Barang Masuk (Beli)' : 'Barang Keluar (Jual)'},"${trx.actor}",${safeItem},${trx.qty},${trx.total},${trx.gov},${trx.officerCut},"${trx.petugas || 'Sistem'}"`;
     });
     const csvContent = [headers.join(','), ...rows].join('\n');
@@ -382,16 +390,19 @@ export default function DashboardPage() {
             <h2 className="text-sm font-bold text-white uppercase tracking-widest">Kestabilan Stok Gudang (DB Real-time)</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-3">
-            {Object.keys(masterKomoditas).filter(item => item !== 'Bawang (NEW!!)' && item !== 'Strawberry (NEW!!)').map((item) => {
+            {/* Tampilkan semuanya (tanpa filter), tapi format namanya di UI */}
+            {Object.keys(masterKomoditas).map((item) => {
               const qty = warehouseStock[item] || 0; 
               const reg = masterKomoditas[item];
               const isHijau = qty >= reg.minHijau;
               const isPenuh = qty >= reg.stokMax;
               const isKrisis = qty < (reg.minHijau / 2);
+              
+              const displayName = formatDisplayName(item); 
 
               return (
                 <div key={item} className="bg-[#0b0e14] border border-white/5 p-3 rounded-xl flex flex-col justify-between">
-                  <span className="text-xs font-medium text-slate-400 line-clamp-1 truncate" title={item}>{item}</span>
+                  <span className="text-xs font-medium text-slate-400 line-clamp-1 truncate" title={displayName}>{displayName}</span>
                   <div className="flex items-end justify-between mt-2">
                     <span className={`text-lg font-extrabold ${isPenuh ? 'text-blue-400' : isHijau ? 'text-emerald-400' : isKrisis ? 'text-red-400' : 'text-amber-400'}`}>
                       {qty.toLocaleString('id-ID')}
@@ -493,7 +504,6 @@ export default function DashboardPage() {
               <form onSubmit={handleSimpanTransaksi} className="space-y-4 flex flex-col">
                 <div className="space-y-1.5">
                   <label className="text-xs text-slate-400 font-medium uppercase tracking-wider">Pilih Tanggal (Backdate)</label>
-                  {/* MODIFIKASI: Input Date dikunci untuk staff biasa */}
                   <input type="date" value={inputDate} onChange={(e) => setInputDate(e.target.value)} disabled={!isPetinggi} className={`w-full bg-[#0b0e14] border border-slate-700/50 p-3 rounded-xl text-slate-200 outline-none ${!isPetinggi ? 'cursor-not-allowed opacity-60' : 'cursor-pointer focus:border-cyan-500'}`} />
                   <p className="text-[10px] text-slate-500 italic">{isPetinggi ? 'Akses Petinggi: Anda dapat melakukan backdate.' : 'Otomatis terisi tanggal hari ini untuk Staff operasional.'}</p>
                 </div>
@@ -507,7 +517,13 @@ export default function DashboardPage() {
                 <div className="space-y-1.5">
                   <label className="text-xs text-slate-400 font-medium uppercase tracking-wider">Pilih Jenis Barang</label>
                   <select value={itemName} onChange={(e) => setItemName(e.target.value)} className="w-full bg-[#0b0e14] border border-slate-700/50 p-3 rounded-xl text-slate-200 outline-none cursor-pointer">
-                    {Object.keys(masterKomoditas).map((barang) => (<option key={barang} value={barang}>{barang}</option>))}
+                    {/* HIDE barang yang lama agar tidak bisa diinput lagi, tapi beri label bersih pada barang baru */}
+                    {Object.keys(masterKomoditas)
+                      .filter(barang => barang !== 'Bawang' && barang !== 'Strawberry')
+                      .map((barang) => (
+                        <option key={barang} value={barang}>{formatDisplayName(barang)}</option>
+                      ))
+                    }
                     <option value="PROMO">🌟 Harga Khusus (Promo / Event)</option>
                   </select>
                 </div>
@@ -551,7 +567,8 @@ export default function DashboardPage() {
                     <div className="bg-[#0b0e14] border border-white/10 rounded-xl p-2 space-y-2 max-h-40 overflow-y-auto">
                       {cartItems.map((c, idx) => (
                         <div key={idx} className="flex justify-between items-center text-xs bg-white/5 p-2 rounded-lg">
-                          <div><span className="font-bold text-slate-200">{c.item}</span><span className="text-slate-400 ml-2">({c.qty} pcs)</span></div>
+                          {/* Nama ditampilkan menggunakan format fungsi */}
+                          <div><span className="font-bold text-slate-200">{formatDisplayName(c.item)}</span><span className="text-slate-400 ml-2">({c.qty} pcs)</span></div>
                           <button type="button" onClick={() => handleRemoveFromCart(idx)} className="text-red-400 hover:text-red-300 font-bold px-2">✕</button>
                         </div>
                       ))}
@@ -583,11 +600,9 @@ export default function DashboardPage() {
             </div>
             
             <div className="overflow-y-auto max-h-[800px]">
-              {/* MODIFIKASI: Hapus min-w-max agar tabel tidak menembus layar */}
               <table className="w-full text-left border-collapse relative">
                 <thead className="sticky top-0 bg-[#151822] z-10 shadow-sm">
                   <tr className="text-[10px] uppercase tracking-widest text-slate-500 font-bold border-b border-white/5">
-                    {/* MODIFIKASI: Ubah padding p-4 menjadi px-2 py-3 agar lebih muat dan tidak horizontal scroll */}
                     <th className="px-2 py-3">Waktu</th>
                     <th className="px-2 py-3">Tipe</th>
                     <th className="px-2 py-3">Info Borongan / Keterangan</th>
@@ -623,11 +638,11 @@ export default function DashboardPage() {
                       {/* Baris Transaksi Reguler */}
                       {tableTransactions.map((trx, index) => (
                         <tr key={index} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                          {/* MODIFIKASI: Ubah padding p-4 menjadi px-2 py-3 */}
                           <td className="px-2 py-3"><p className="text-slate-300 font-medium">{trx.date}</p><p className="text-slate-500 text-xs mt-0.5">{trx.time}</p></td>
                           <td className="px-2 py-3">{trx.type === 'OUT' ? <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20"><ArrowUp className="w-3 h-3" /> OUT</span> : <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><ArrowDown className="w-3 h-3" /> IN</span>}</td>
                           <td className="px-2 py-3">
-                            <p className="font-bold text-slate-200">{trx.item}</p>
+                            {/* Menampilkan nama bersih menggunakan fungsi formatDisplayName */}
+                            <p className="font-bold text-slate-200">{formatDisplayName(trx.item)}</p>
                             <p className="text-xs text-slate-500 mt-0.5">Pihak: {trx.actor}</p>
                             {isPetinggi && <p className="text-[10px] text-cyan-500 mt-1.5 font-bold tracking-wider">INPUT BY: {trx.petugas || 'Sistem'}</p>}
                           </td>
