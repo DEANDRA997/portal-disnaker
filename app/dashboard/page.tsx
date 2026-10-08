@@ -10,8 +10,10 @@ import {
 
 import { 
   getTransactions, saveTransaction, getWarehouseStock, getActiveUser, logoutUser, 
-  getAllUsers, createUser, resetUserPassword, deleteUser, getKasNegara, addKasNegara 
+  getAllUsers, createUser, resetUserPassword, deleteUser, getKasNegara, addKasNegara,
+  updateTransaction, deleteTransaction
 } from '../actions';
+
 
 const masterKomoditas: Record<string, { buyPrice: number; sellInstansi: number; sellWarga: number; maxTerima: number; maxJual: number; stokMax: number; minHijau: number; }> = {
   'Batu Bersih':      { buyPrice: 900,  sellInstansi: 1000, sellWarga: 1100, maxTerima: 99999, maxJual: 99999, stokMax: 50000, minHijau: 5000 },
@@ -73,6 +75,8 @@ export default function DashboardPage() {
   
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [editingTrx, setEditingTrx] = useState<any | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   
   // State Transaksi
   const todayStr = new Date().toLocaleDateString('en-CA');
@@ -286,14 +290,53 @@ export default function DashboardPage() {
     }
   };
 
-  const handleEditTransaksi = async (trx: any) => {
-    // Menampilkan nama barang bersih di alert edit
-    alert(`Fitur Edit Transaksi untuk: ${formatDisplayName(trx.item)}\n(Backend API Edit belum dibuat. Silakan hubungkan dengan Server Action).`);
+  const handleEditTransaksi = (trx: any) => {
+    setEditingTrx(trx); // Buka modal dan masukkan data
+  };
+
+  const handleUpdateTransaksi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTrx) return;
+    setIsUpdating(true);
+
+    const res = await updateTransaction(editingTrx.id, {
+      date: editingTrx.date,
+      time: editingTrx.time,
+      actor: editingTrx.actor
+    });
+
+    if (res.success) {
+      const [updatedTransactions, updatedStock] = await Promise.all([
+        getTransactions(),
+        getWarehouseStock()
+      ]);
+      setTransactions(updatedTransactions);
+      setWarehouseStock(updatedStock || {});
+      setEditingTrx(null); // Tutup modal
+      alert("Data transaksi berhasil diperbarui!");
+    } else {
+      alert(res.message);
+    }
+    setIsUpdating(false);
   };
 
   const handleHapusTransaksi = async (id: string) => {
-    if (confirm("⚠️ PERINGATAN!\nApakah Anda yakin ingin menghapus transaksi ini permanen dari DB?")) {
-      alert(`Fitur Hapus Transaksi (ID: ${id || 'Tidak diketahui'})\n(Backend API Hapus belum dibuat. Silakan hubungkan dengan Server Action).`);
+    if (confirm("⚠️ PERINGATAN!\nApakah Anda yakin ingin menghapus transaksi ini permanen dari DB? (Stok gudang tidak akan otomatis kembali)")) {
+      
+      const res = await deleteTransaction(id);
+      
+      if (res.success) {
+        // Tarik ulang data buku besar agar transaksi langsung hilang dari layar
+        const [updatedTransactions, updatedStock] = await Promise.all([
+          getTransactions(),
+          getWarehouseStock()
+        ]);
+        setTransactions(updatedTransactions);
+        setWarehouseStock(updatedStock || {});
+        
+      } else {
+        alert(res.message);
+      }
     }
   };
 
@@ -778,6 +821,43 @@ export default function DashboardPage() {
                   </table>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL EDIT TRANSAKSI */}
+        {editingTrx && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-[#151822] border border-white/10 p-6 rounded-2xl shadow-2xl w-full max-w-md">
+              <h3 className="text-lg font-bold text-white mb-4">Edit Data Transaksi</h3>
+              
+              <div className="mb-4 p-3 bg-white/5 rounded-xl border border-white/5 text-xs text-slate-400">
+                <p className="font-bold text-slate-200">{formatDisplayName(editingTrx.item)}</p>
+                <p>Nilai: ${editingTrx.total}</p>
+                <p className="mt-1 text-[10px] text-amber-400/80 italic">*Untuk menjaga sinkronisasi stok gudang, rincian barang dan nominal tidak dapat diubah.</p>
+              </div>
+              
+              <form onSubmit={handleUpdateTransaksi} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-400 font-medium">Tanggal</label>
+                  <input type="date" value={editingTrx.date} onChange={(e) => setEditingTrx({...editingTrx, date: e.target.value})} className="w-full bg-[#0b0e14] border border-slate-700/50 p-2.5 rounded-xl text-slate-200 outline-none focus:border-cyan-500" required />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-400 font-medium">Waktu</label>
+                  <input type="time" value={editingTrx.time} onChange={(e) => setEditingTrx({...editingTrx, time: e.target.value})} className="w-full bg-[#0b0e14] border border-slate-700/50 p-2.5 rounded-xl text-slate-200 outline-none focus:border-cyan-500" required />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-400 font-medium">Pihak Terkait (Warga/Bisnis)</label>
+                  <input type="text" value={editingTrx.actor} onChange={(e) => setEditingTrx({...editingTrx, actor: e.target.value})} className="w-full bg-[#0b0e14] border border-slate-700/50 p-2.5 rounded-xl text-slate-200 outline-none focus:border-cyan-500" required />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setEditingTrx(null)} className="w-1/2 py-2.5 rounded-xl font-bold text-sm bg-white/5 text-slate-300 hover:bg-white/10 transition-colors">Batal</button>
+                  <button type="submit" disabled={isUpdating} className="w-1/2 py-2.5 rounded-xl font-bold text-sm bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/50 disabled:opacity-50">
+                    {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

@@ -195,3 +195,34 @@ export async function addKasNegara(data: { tanggal: string; jumlah: number; kete
     return { success: false, message: 'Gagal mencatat Kas Presiden.' };
   }
 }
+
+export async function updateTransaction(id: string, updatedData: { date: string; time: string; actor: string }) {
+  try {
+    // Pastikan model kamu bernama prisma.transaction (sesuaikan jika namanya berbeda, misal prisma.transaksi)
+    await prisma.transaction.update({
+      where: { id: id },
+      data: {
+        date: updatedData.date,
+        time: updatedData.time,
+        actor: updatedData.actor,
+      }
+    });
+    return { success: true, message: "Transaksi berhasil diperbarui" };
+  } catch (error) {
+    console.error("Gagal update transaksi:", error);
+    return { success: false, message: "Terjadi kesalahan pada server saat update." };
+  }
+}
+
+// Tambahkan fungsi ini di actions.ts
+export async function deleteTransaction(id: string) {
+  try {
+    await prisma.transaction.delete({
+      where: { id: id }
+    });
+    return { success: true, message: "Transaksi berhasil dihapus" };
+  } catch (error) {
+    console.error("Gagal menghapus transaksi:", error);
+    return { success: false, message: "Gagal menghapus data dari server." };
+  }
+}
