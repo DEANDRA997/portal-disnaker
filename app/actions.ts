@@ -243,11 +243,11 @@ export async function deleteTransaction(id: string) {
         await tx.warehouseStock.upsert({
           where: { itemName: cleanItemName },
           update: {
-            stock: isOut ? { increment: qty } : { decrement: qty }
+            quantity: isOut ? { increment: qty } : { decrement: qty } // <-- Telah diperbaiki menjadi 'quantity'
           },
           create: {
             itemName: cleanItemName,
-            stock: isOut ? qty : -qty
+            quantity: isOut ? qty : -qty // <-- Telah diperbaiki menjadi 'quantity'
           }
         });
       }
