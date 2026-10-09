@@ -355,7 +355,7 @@ export default function DashboardPage() {
     </div>
   );
 
-const isAdmin = activeUser.role === 'ADMIN';
+  const isAdmin = activeUser.role === 'ADMIN';
   const isPetinggi = activeUser.role === 'MENTERI' || activeUser.role === 'WAMEN' || activeUser.role === 'WAKIL MENTERI' || isAdmin;
   const isMenteriOrAdmin = activeUser.role === 'MENTERI' || isAdmin;
 
@@ -393,19 +393,12 @@ const isAdmin = activeUser.role === 'ADMIN';
 
   // WRAPPER UTAMA UNTUK TEMA TERSINKRONISASI
   return (
-   <div className={theme === 'dark' ? 'dark' : ''}>
-      <div className="min-h-screen bg-slate-100 dark:bg-black text-slate-800 dark:text-slate-300 relative font-sans overflow-hidden p-4 md:p-8 pb-20 transition-colors duration-700 z-0">
+    <div className={theme === 'dark' ? 'dark' : ''}>
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0f111a] text-slate-800 dark:text-slate-300 relative font-sans overflow-hidden p-4 md:p-8 pb-20 transition-colors duration-300">
         
-        {/* 1. ANIMASI CAHAYA: Dua Orb Raksasa Berputar Berlawanan Arah */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150vw] h-[150vw] md:w-[90vw] md:h-[90vw] bg-gradient-to-tr from-cyan-400/20 via-blue-500/10 to-emerald-400/20 dark:from-cyan-600/30 dark:via-indigo-900/20 dark:to-emerald-600/30 blur-[80px] md:blur-[120px] rounded-full animate-[spin_20s_linear_infinite] -z-10 pointer-events-none"></div>
-        
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] md:w-[70vw] md:h-[70vw] bg-gradient-to-bl from-amber-400/10 via-transparent to-rose-400/10 dark:from-purple-600/20 dark:via-transparent dark:to-cyan-600/20 blur-[100px] md:blur-[140px] rounded-full animate-[spin_25s_linear_infinite_reverse] -z-10 pointer-events-none"></div>
+        {/* Latar Belakang Dekoratif */}
+        <div className="absolute inset-0 z-0 opacity-10 dark:opacity-20 pointer-events-none transition-opacity" style={{ backgroundImage: 'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
 
-        {/* 2. EFEK TEKSTUR: Garis Scanline Tipis ala Monitor Hologram */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none -z-10"></div>
-        
-        {/* 3. TEMA LOGISTIK: Garis Peringatan Gudang (Glow) di Atas */}
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#0ea5e9_10px,#0ea5e9_20px)] dark:bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#10b981_10px,#10b981_20px)] opacity-70 z-0"></div>
         <div className="max-w-7xl mx-auto space-y-6 relative z-10">
           
           {/* HEADER */}
