@@ -394,11 +394,14 @@ export default function DashboardPage() {
   // WRAPPER UTAMA UNTUK TEMA TERSINKRONISASI
   return (
    <div className={theme === 'dark' ? 'dark' : ''}>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-300 relative font-sans overflow-hidden p-4 md:p-8 pb-20 transition-colors duration-300 z-0">
+      <div className="min-h-screen bg-neutral-100 dark:bg-[#050505] text-neutral-800 dark:text-slate-300 relative font-sans overflow-hidden p-4 md:p-8 pb-20 transition-colors duration-300 z-0">
         
-        {/* Latar Belakang Dekoratif: Glow Halus di Sudut Layar */}
-        <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] bg-blue-500/20 dark:bg-blue-600/20 blur-[120px] rounded-full pointer-events-none -z-10"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/20 dark:bg-emerald-600/20 blur-[120px] rounded-full pointer-events-none -z-10"></div>
+        {/* Latar Belakang Dekoratif: Cyber Grid Neon */}
+        <div className="absolute inset-0 -z-10 opacity-40 dark:opacity-30 pointer-events-none transition-opacity" style={{ backgroundImage: 'linear-gradient(var(--tw-gradient-stops))', backgroundSize: '50px 50px' }}>
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(14,165,233,0.3)_1px,transparent_1px),linear-gradient(90deg,rgba(14,165,233,0.3)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(16,185,129,0.2)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.2)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+          {/* Vignette Gelap agar tengahnya fokus */}
+          <div className="absolute inset-0 bg-neutral-100/50 dark:bg-black/60"></div>
+        </div>
         <div className="max-w-7xl mx-auto space-y-6 relative z-10">
           
           {/* HEADER */}
