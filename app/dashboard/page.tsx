@@ -393,12 +393,12 @@ export default function DashboardPage() {
 
   // WRAPPER UTAMA UNTUK TEMA TERSINKRONISASI
   return (
-    <div className={theme === 'dark' ? 'dark' : ''}>
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0f111a] text-slate-800 dark:text-slate-300 relative font-sans overflow-hidden p-4 md:p-8 pb-20 transition-colors duration-300">
+   <div className={theme === 'dark' ? 'dark' : ''}>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-300 relative font-sans overflow-hidden p-4 md:p-8 pb-20 transition-colors duration-300 z-0">
         
-        {/* Latar Belakang Dekoratif */}
-        <div className="absolute inset-0 z-0 opacity-10 dark:opacity-20 pointer-events-none transition-opacity" style={{ backgroundImage: 'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
-
+        {/* Latar Belakang Dekoratif: Glow Halus di Sudut Layar */}
+        <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] bg-blue-500/20 dark:bg-blue-600/20 blur-[120px] rounded-full pointer-events-none -z-10"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/20 dark:bg-emerald-600/20 blur-[120px] rounded-full pointer-events-none -z-10"></div>
         <div className="max-w-7xl mx-auto space-y-6 relative z-10">
           
           {/* HEADER */}
