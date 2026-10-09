@@ -356,7 +356,7 @@ export default function DashboardPage() {
   );
 
   const isAdmin = activeUser.role === 'ADMIN';
-  const isPetinggi = activeUser.role === 'MENTERI' || activeUser.role === 'WAMEN' || activeUser.role === 'WAKIL MENTERI' || isAdmin;
+  const isPetinggi = activeUser.role === 'MENTERI' || activeUser.role === 'WAMEN' || isAdmin;
   const isMenteriOrAdmin = activeUser.role === 'MENTERI' || isAdmin;
 
   const currentMonthStr = todayStr.substring(0, 7);
