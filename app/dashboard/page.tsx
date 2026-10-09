@@ -355,9 +355,10 @@ export default function DashboardPage() {
     </div>
   );
 
-  const isAdmin = activeUser.role === 'ADMIN';
-  const isPetinggi = activeUser.role === 'MENTERI' || activeUser.role === 'WAMEN' || activeUser.role === 'WAKIL MENTERI' || isAdmin;
-  const isMenteriOrAdmin = activeUser.role === 'MENTERI' || isAdmin;
+  const safeRole = activeUser.role ? activeUser.role.toUpperCase().trim() : '';
+  const isAdmin = safeRole === 'ADMIN';
+  const isPetinggi = safeRole === 'MENTERI' || safeRole === 'WAMEN' || safeRole === 'WAKIL MENTERI' || safeRole === 'WAKIL' || isAdmin;
+  const isMenteriOrAdmin = safeRole === 'MENTERI' || isAdmin;
 
   const currentMonthStr = todayStr.substring(0, 7);
   const filteredTransactions = transactions.filter(trx => {
