@@ -355,9 +355,9 @@ export default function DashboardPage() {
     </div>
   );
 
-  const isAdmin = activeUser.role === 'ADMIN';
-  const isPetinggi = activeUser.role === 'MENTERI' || activeUser.role === 'WAMEN' || isAdmin;
-  const isMenteriOrAdmin = activeUser.role === 'MENTERI' || isAdmin; 
+const isAdmin = activeUser.role === 'ADMIN';
+  const isPetinggi = activeUser.role === 'MENTERI' || activeUser.role === 'WAMEN' || activeUser.role === 'WAKIL MENTERI' || isAdmin;
+  const isMenteriOrAdmin = activeUser.role === 'MENTERI' || isAdmin;
 
   const currentMonthStr = todayStr.substring(0, 7);
   const filteredTransactions = transactions.filter(trx => {
