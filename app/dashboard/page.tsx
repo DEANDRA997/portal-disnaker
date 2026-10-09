@@ -11,9 +11,8 @@ import {
 import { 
   getTransactions, saveTransaction, getWarehouseStock, getActiveUser, logoutUser, 
   getAllUsers, createUser, resetUserPassword, deleteUser, getKasNegara, addKasNegara,
-  updateTransaction, deleteTransaction
+  updateTransaction, deleteTransaction 
 } from '../actions';
-
 
 const masterKomoditas: Record<string, { buyPrice: number; sellInstansi: number; sellWarga: number; maxTerima: number; maxJual: number; stokMax: number; minHijau: number; }> = {
   'Batu Bersih':      { buyPrice: 900,  sellInstansi: 1000, sellWarga: 1100, maxTerima: 99999, maxJual: 99999, stokMax: 50000, minHijau: 5000 },
@@ -38,23 +37,15 @@ const masterKomoditas: Record<string, { buyPrice: number; sellInstansi: number; 
   'Package Ayam':     { buyPrice: 1000, sellInstansi: 1100, sellWarga: 1200, maxTerima: 99999, maxJual: 99999, stokMax: 10000, minHijau: 1000 },
 };
 
-// FUNGSI KHUSUS UNTUK MEMANIPULASI TAMPILAN NAMA BARANG DI LAYAR (TANPA MERUSAK DB)
 const formatDisplayName = (text: string) => {
   if (!text) return text;
   let res = text;
-  
-  // 1. Amankan yang (NEW!!) menjadi placeholder sementara
   res = res.split('Bawang (NEW!!)').join('__BWG_NEW__');
   res = res.split('Strawberry (NEW!!)').join('__STR_NEW__');
-  
-  // 2. Ubah teks lama yang asli menjadi "(Old)"
   res = res.split('Bawang').join('Bawang (Old)');
   res = res.split('Strawberry').join('Strawberry (Old)');
-  
-  // 3. Kembalikan placeholder yang NEW menjadi nama standar yang bersih
   res = res.split('__BWG_NEW__').join('Bawang');
   res = res.split('__STR_NEW__').join('Strawberry');
-  
   return res;
 };
 
@@ -75,9 +66,11 @@ export default function DashboardPage() {
   
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // State untuk Fitur Edit
   const [editingTrx, setEditingTrx] = useState<any | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  
+
   // State Transaksi
   const todayStr = new Date().toLocaleDateString('en-CA');
   const [inputDate, setInputDate] = useState(todayStr); 
@@ -185,7 +178,6 @@ export default function DashboardPage() {
         const baseName = cart.item.replace('[PROMO] ', '');
         const currentStock = warehouseStock[baseName] || 0; 
         if (!cart.item.includes('PROMO') && currentStock < cart.qty) {
-          // Alert menggunakan format nama yg bersih
           return alert(`❌ STOK TIDAK CUKUP!\nSisa ${formatDisplayName(baseName)}: ${currentStock.toLocaleString('id-ID')}`);
         }
       }
@@ -202,7 +194,7 @@ export default function DashboardPage() {
       date: inputDate, 
       time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       type: trxType,
-      item: cartItems.map(c => `${c.qty}x ${c.item}`).join(', '), // Database tetap simpan tulisan asli
+      item: cartItems.map(c => `${c.qty}x ${c.item}`).join(', '), 
       actor: actorName,
       qty: cartItems.reduce((acc, curr) => acc + curr.qty, 0),
       price: cartItems[0].price,
@@ -221,7 +213,6 @@ export default function DashboardPage() {
       setTransactions(updatedTransactions);
       setWarehouseStock(updatedStock || {});
       setCartItems([]);
-      // Alert dihapus agar progress lebih cepat dan tanpa hambatan pop-up
     } else {
       alert("Terjadi kesalahan sistem!");
     }
@@ -243,7 +234,6 @@ export default function DashboardPage() {
 
     const res = await addKasNegara(data);
     if (res.success) {
-      // Menghapus alert agar proses lebih cepat
       setNominalPresiden(''); setKetPresiden('');
       setKasPresidenList(await getKasNegara());
     } else alert("Gagal menyimpan data kas.");
@@ -255,7 +245,6 @@ export default function DashboardPage() {
     setIsSavingUser(true);
     const res = await createUser({ username: newUsername, name: newName, password: newPassword, role: newRole });
     if (res.success) {
-      // Menghapus alert agar proses lebih cepat
       setNewUsername(''); setNewName(''); setNewPassword(''); setNewRole('STAFF');
       setUsersList(await getAllUsers());
     } else {
@@ -268,11 +257,7 @@ export default function DashboardPage() {
     const newPass = prompt(`Masukkan Kata Sandi BARU untuk ${name}:`);
     if (!newPass) return;
     const res = await resetUserPassword(id, newPass);
-    if (res.success) {
-      // Dikosongkan agar tidak ada pop up sukses
-    } else {
-      alert(res.message);
-    }
+    if (!res.success) alert(res.message);
   };
 
   const handleHapusPegawai = async (id: string, name: string) => {
@@ -290,8 +275,9 @@ export default function DashboardPage() {
     }
   };
 
+  // --- LOGIKA EDIT & HAPUS NYATA ---
   const handleEditTransaksi = (trx: any) => {
-    setEditingTrx(trx); // Buka modal dan masukkan data
+    setEditingTrx({ ...trx });
   };
 
   const handleUpdateTransaksi = async (e: React.FormEvent) => {
@@ -312,28 +298,27 @@ export default function DashboardPage() {
       ]);
       setTransactions(updatedTransactions);
       setWarehouseStock(updatedStock || {});
-      setEditingTrx(null); // Tutup modal
-      alert("Data transaksi berhasil diperbarui!");
+      setEditingTrx(null);
     } else {
       alert(res.message);
     }
     setIsUpdating(false);
   };
 
-  const handleHapusTransaksi = async (id: string) => {
-    if (confirm("⚠️ PERINGATAN!\nApakah Anda yakin ingin menghapus transaksi ini permanen dari DB? (Stok gudang tidak akan otomatis kembali)")) {
-      
+   const handleHapusTransaksi = async (id: string) => {
+    // Pesan konfirmasinya diubah agar lebih informatif
+    if (confirm("⚠️ PERINGATAN!\nApakah Anda yakin ingin menghapus transaksi ini? Stok barang akan otomatis dikembalikan ke gudang.")) {
       const res = await deleteTransaction(id);
       
       if (res.success) {
-        // Tarik ulang data buku besar agar transaksi langsung hilang dari layar
+        // Tarik data secara paralel agar UI langsung update seketika
         const [updatedTransactions, updatedStock] = await Promise.all([
           getTransactions(),
           getWarehouseStock()
         ]);
         setTransactions(updatedTransactions);
         setWarehouseStock(updatedStock || {});
-        
+        alert("Berhasil! Transaksi dihapus dan stok gudang telah diperbarui.");
       } else {
         alert(res.message);
       }
@@ -347,7 +332,6 @@ export default function DashboardPage() {
     </div>
   );
 
-  // LOGIKA AKSES ROLE
   const isAdmin = activeUser.role === 'ADMIN';
   const isPetinggi = activeUser.role === 'MENTERI' || activeUser.role === 'WAMEN' || isAdmin;
   const isMenteriOrAdmin = activeUser.role === 'MENTERI' || isAdmin; 
@@ -381,7 +365,7 @@ export default function DashboardPage() {
     const q = searchQuery.toLowerCase();
     return (
       trx.actor.toLowerCase().includes(q) || 
-      formatDisplayName(trx.item).toLowerCase().includes(q) || // Search bekerja menggunakan display name  
+      formatDisplayName(trx.item).toLowerCase().includes(q) || 
       trx.type.toLowerCase().includes(q)
     );
   });
@@ -390,7 +374,6 @@ export default function DashboardPage() {
     if (filteredTransactions.length === 0) return alert("Tidak ada data transaksi untuk diexport pada periode ini.");
     const headers = ["Tanggal", "Waktu", "Tipe Transaksi", "Pihak Terkait", "Rincian Barang", "Total Barang", "Nilai Transaksi ($)", "Kas Pemerintah ($)", "Komisi Petugas ($)", "Nama Petugas"];
     const rows = filteredTransactions.map(trx => {
-      // Export CSV menggunakan format nama yang bersih
       const safeItem = `"${formatDisplayName(trx.item)}"`; 
       return `${trx.date},${trx.time},${trx.type === 'IN' ? 'Barang Masuk (Beli)' : 'Barang Keluar (Jual)'},"${trx.actor}",${safeItem},${trx.qty},${trx.total},${trx.gov},${trx.officerCut},"${trx.petugas || 'Sistem'}"`;
     });
@@ -409,7 +392,7 @@ export default function DashboardPage() {
 
       <div className="max-w-7xl mx-auto space-y-6 relative z-10">
         
-        {/* HEADER IDENTITAS PEGAWAI / ADMIN */}
+        {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-lg">
             <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-600">
@@ -446,7 +429,6 @@ export default function DashboardPage() {
             <h2 className="text-sm font-bold text-white uppercase tracking-widest">Kestabilan Stok Gudang (DB Real-time)</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-3">
-            {/* Sembunyikan Bawang dan Strawberry versi lama dari panel Stok Gudang */}
             {Object.keys(masterKomoditas)
               .filter(item => item !== 'Bawang' && item !== 'Strawberry')
               .map((item) => {
@@ -455,8 +437,7 @@ export default function DashboardPage() {
               const isHijau = qty >= reg.minHijau;
               const isPenuh = qty >= reg.stokMax;
               const isKrisis = qty < (reg.minHijau / 2);
-              
-              const displayName = formatDisplayName(item); // Terapkan nama khusus UI
+              const displayName = formatDisplayName(item);
 
               return (
                 <div key={item} className="bg-[#0b0e14] border border-white/5 p-3 rounded-xl flex flex-col justify-between">
@@ -476,7 +457,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* REKAPAN KEUANGAN & FILTERING */}
+        {/* REKAPAN KEUANGAN */}
         <div>
           <div className="flex flex-col md:flex-row gap-3 mb-4 justify-between items-start md:items-center">
             <div className="flex flex-wrap items-center gap-2">
@@ -575,7 +556,6 @@ export default function DashboardPage() {
                 <div className="space-y-1.5">
                   <label className="text-xs text-slate-400 font-medium uppercase tracking-wider">Pilih Jenis Barang</label>
                   <select value={itemName} onChange={(e) => setItemName(e.target.value)} className="w-full bg-[#0b0e14] border border-slate-700/50 p-3 rounded-xl text-slate-200 outline-none cursor-pointer">
-                    {/* HIDE barang yang lama agar tidak bisa diinput lagi, tapi beri label bersih pada barang baru */}
                     {Object.keys(masterKomoditas)
                       .filter(barang => barang !== 'Bawang' && barang !== 'Strawberry')
                       .map((barang) => (
@@ -625,7 +605,6 @@ export default function DashboardPage() {
                     <div className="bg-[#0b0e14] border border-white/10 rounded-xl p-2 space-y-2 max-h-40 overflow-y-auto">
                       {cartItems.map((c, idx) => (
                         <div key={idx} className="flex justify-between items-center text-xs bg-white/5 p-2 rounded-lg">
-                          {/* Nama ditampilkan menggunakan format fungsi */}
                           <div><span className="font-bold text-slate-200">{formatDisplayName(c.item)}</span><span className="text-slate-400 ml-2">({c.qty} pcs)</span></div>
                           <button type="button" onClick={() => handleRemoveFromCart(idx)} className="text-red-400 hover:text-red-300 font-bold px-2">✕</button>
                         </div>
@@ -677,7 +656,6 @@ export default function DashboardPage() {
                     <tr><td colSpan={7} className="px-2 py-8 text-center text-slate-500">Tidak ada data ditemukan pada periode ini.</td></tr>
                   ) : (
                     <>
-                      {/* Baris Khusus Suntikan Kas Presiden */}
                       {filteredKas.map((kas, idx) => (
                         <tr key={`kas-${idx}`} className="border-b border-emerald-500/20 bg-emerald-900/10 hover:bg-emerald-900/20 transition-colors">
                           <td className="px-2 py-3"><p className="text-emerald-300 font-medium">{kas.tanggal}</p><p className="text-emerald-500 text-xs mt-0.5">Uang Kas</p></td>
@@ -693,13 +671,11 @@ export default function DashboardPage() {
                         </tr>
                       ))}
 
-                      {/* Baris Transaksi Reguler */}
                       {tableTransactions.map((trx, index) => (
                         <tr key={index} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                           <td className="px-2 py-3"><p className="text-slate-300 font-medium">{trx.date}</p><p className="text-slate-500 text-xs mt-0.5">{trx.time}</p></td>
                           <td className="px-2 py-3">{trx.type === 'OUT' ? <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20"><ArrowUp className="w-3 h-3" /> OUT</span> : <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><ArrowDown className="w-3 h-3" /> IN</span>}</td>
                           <td className="px-2 py-3">
-                            {/* Menampilkan nama bersih menggunakan fungsi formatDisplayName */}
                             <p className="font-bold text-slate-200">{formatDisplayName(trx.item)}</p>
                             <p className="text-xs text-slate-500 mt-0.5">Pihak: {trx.actor}</p>
                             {isPetinggi && <p className="text-[10px] text-cyan-500 mt-1.5 font-bold tracking-wider">INPUT BY: {trx.petugas || 'Sistem'}</p>}
@@ -732,7 +708,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* PUSAT MANAJEMEN PEGAWAI (HANYA ADMIN) */}
+        {/* PUSAT MANAJEMEN PEGAWAI */}
         {isAdmin && (
           <div className="pt-8 border-t border-white/10 mt-10">
             <div className="mb-6">
@@ -825,7 +801,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* MODAL EDIT TRANSAKSI */}
+        {/* MODAL POP-UP EDIT TRANSAKSI */}
         {editingTrx && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-[#151822] border border-white/10 p-6 rounded-2xl shadow-2xl w-full max-w-md">
@@ -834,7 +810,7 @@ export default function DashboardPage() {
               <div className="mb-4 p-3 bg-white/5 rounded-xl border border-white/5 text-xs text-slate-400">
                 <p className="font-bold text-slate-200">{formatDisplayName(editingTrx.item)}</p>
                 <p>Nilai: ${editingTrx.total}</p>
-                <p className="mt-1 text-[10px] text-amber-400/80 italic">*Untuk menjaga sinkronisasi stok gudang, rincian barang dan nominal tidak dapat diubah.</p>
+                <p className="mt-1 text-[10px] text-amber-400/80 italic">*Rincian barang tidak dapat diubah demi menjaga sinkronisasi stok gudang DB.</p>
               </div>
               
               <form onSubmit={handleUpdateTransaksi} className="space-y-4">
@@ -854,7 +830,7 @@ export default function DashboardPage() {
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => setEditingTrx(null)} className="w-1/2 py-2.5 rounded-xl font-bold text-sm bg-white/5 text-slate-300 hover:bg-white/10 transition-colors">Batal</button>
                   <button type="submit" disabled={isUpdating} className="w-1/2 py-2.5 rounded-xl font-bold text-sm bg-blue-600 text-white hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/50 disabled:opacity-50">
-                    {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
+                    {isUpdating ? "Menyimpan..." : "Simpan"}
                   </button>
                 </div>
               </form>

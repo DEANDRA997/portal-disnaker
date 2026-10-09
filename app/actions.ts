@@ -198,7 +198,6 @@ export async function addKasNegara(data: { tanggal: string; jumlah: number; kete
 
 export async function updateTransaction(id: string, updatedData: { date: string; time: string; actor: string }) {
   try {
-    // Pastikan model kamu bernama prisma.transaction (sesuaikan jika namanya berbeda, misal prisma.transaksi)
     await prisma.transaction.update({
       where: { id: id },
       data: {
@@ -210,19 +209,56 @@ export async function updateTransaction(id: string, updatedData: { date: string;
     return { success: true, message: "Transaksi berhasil diperbarui" };
   } catch (error) {
     console.error("Gagal update transaksi:", error);
-    return { success: false, message: "Terjadi kesalahan pada server saat update." };
+    return { success: false, message: "Gagal memperbarui transaksi di database." };
   }
 }
 
-// Tambahkan fungsi ini di actions.ts
 export async function deleteTransaction(id: string) {
   try {
-    await prisma.transaction.delete({
-      where: { id: id }
+    // 1. Cari transaksi berdasarkan ID
+    const trx = await prisma.transaction.findUnique({ where: { id } });
+    if (!trx) return { success: false, message: "Transaksi tidak ditemukan" };
+
+    // 2. Gunakan Interactive Transaction Prisma agar aman
+    await prisma.$transaction(async (tx) => {
+      // Pecah string nota, misalnya: "10x Beras, 5x Tembaga" menjadi array
+      const items = trx.item.split(', ');
+
+      for (const itemStr of items) {
+        // Ekstrak angka dan nama barang (memisahkan berdasarkan "x ")
+        const firstXIndex = itemStr.indexOf('x ');
+        if (firstXIndex === -1) continue;
+
+        const qty = parseInt(itemStr.substring(0, firstXIndex));
+        const rawItemName = itemStr.substring(firstXIndex + 2); 
+        
+        // Bersihkan nama dari embel-embel [PROMO] jika ada
+        const cleanItemName = rawItemName.replace('[PROMO] ', '');
+
+        // Logika pengembalian stok: 
+        // Jika nota aslinya JUAL (OUT), maka stok dikembalikan (tambah)
+        // Jika nota aslinya BELI (IN), maka stok ditarik balik (kurang)
+        const isOut = trx.type === 'OUT';
+
+        await tx.warehouseStock.upsert({
+          where: { itemName: cleanItemName },
+          update: {
+            stock: isOut ? { increment: qty } : { decrement: qty }
+          },
+          create: {
+            itemName: cleanItemName,
+            stock: isOut ? qty : -qty
+          }
+        });
+      }
+
+      // 3. Setelah stok aman, hapus transaksi dari DB
+      await tx.transaction.delete({ where: { id } });
     });
-    return { success: true, message: "Transaksi berhasil dihapus" };
+
+    return { success: true, message: "Transaksi dihapus dan stok gudang berhasil disinkronisasi ulang." };
   } catch (error) {
     console.error("Gagal menghapus transaksi:", error);
-    return { success: false, message: "Gagal menghapus data dari server." };
+    return { success: false, message: "Gagal menghapus dan memulihkan stok di database." };
   }
 }
