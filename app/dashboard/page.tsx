@@ -20,7 +20,7 @@ const masterKomoditas: Record<string, { buyPrice: number; sellInstansi: number; 
   'Recycle Package':  { buyPrice: 900,  sellInstansi: 1000, sellWarga: 1100, maxTerima: 99999, maxJual: 99999, stokMax: 50000, minHijau: 5000 },
   'Baju':             { buyPrice: 900, sellInstansi: 1100, sellWarga: 1200, maxTerima: 99999, maxJual: 99999, stokMax: 15000, minHijau: 3000 },
   'Kulit':            { buyPrice: 800, sellInstansi: 1100, sellWarga: 1200, maxTerima: 99999, maxJual: 99999, stokMax: 5000, minHijau: 3000 },
-  'Tembaga':          { buyPrice: 7500, sellInstansi: 8000, sellWarga: 8100, maxTerima: 99999, maxJual: 99999, stokMax: 10000, minHijau: 500 },
+  'Tembaga':          { buyPrice: 7500, sellInstansi: 7850, sellWarga: 8000, maxTerima: 99999, maxJual: 99999, stokMax: 10000, minHijau: 500 },
   'Anggur':           { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Strawberry':       { buyPrice: 800, sellInstansi: 900, sellWarga: 1000, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
   'Strawberry (NEW!!)':{ buyPrice: 500, sellInstansi: 600, sellWarga: 700, maxTerima: 99999, maxJual: 99999, stokMax: 7500, minHijau: 1000 },
