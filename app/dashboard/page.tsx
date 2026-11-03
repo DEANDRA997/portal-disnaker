@@ -96,7 +96,7 @@ export default function DashboardPage() {
   const [ketPresiden, setKetPresiden] = useState('');
   const [isSavingKas, setIsSavingKas] = useState(false);
 
-  const allActors = ["Warga (General)", "Nusantara Resto", "Kungkungkhap Resto", "969 Resto", "Tekno garage", "969 garage", "stunberg garage", "max garage", "kungkung garage", "maison rainheart", "kedai YGM", "YGM Center", "sumber rezeki"];
+  const allActors = ["Warga (General)", "Nusantara Resto", "Kungkungkhap Resto", "969 Resto", "Tekno garage", "969 garage", "stunberg garage", "max garage", "kungkung garage", "maison rainheart", "kedai YGM", "YGM Center", "sumber rezeki", "Up & Atom"];
 
   useEffect(() => {
     // Muat preferensi tema dari local storage
