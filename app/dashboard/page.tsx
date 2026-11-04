@@ -6,7 +6,7 @@ import {
   Landmark, ArrowUp, ArrowDown, TrendingUp, PieChart, User, Plus, LogOut, 
   AlertCircle, Package, Calendar, CalendarDays, AlertTriangle, ShieldAlert, ShieldCheck, 
   Download, Search, UserPlus, Users, Trash2, Key, Banknote, CalendarSearch, Edit,
-  Sun, Moon // <-- Icon baru untuk tema
+  Sun, Moon
 } from 'lucide-react';
 
 import { 
@@ -78,7 +78,6 @@ export default function DashboardPage() {
   const [inputDate, setInputDate] = useState(todayStr); 
   const [trxType, setTrxType] = useState<'OUT' | 'IN'>('OUT');
   const [itemName, setItemName] = useState('Anggur');
-  const [customItemName, setCustomItemName] = useState('');
   const [actorName, setActorName] = useState('Warga (General)');
   const [quantity, setQuantity] = useState<number | ''>('');
   const [pricePerUnit, setPricePerUnit] = useState<number | ''>(1000);
@@ -135,19 +134,19 @@ export default function DashboardPage() {
   }, []); 
 
   useEffect(() => {
-    if (itemName === 'PROMO') {
-      setIsPromo(true);
-      setPricePerUnit('');
+    if (isPromo) {
+      // Jika mode promo aktif, jangan menimpa nilai pricePerUnit, biarkan user menginput manual
     } else {
-      setIsPromo(false);
       const regulasi = masterKomoditas[itemName];
-      if (trxType === 'IN') {
-        setPricePerUnit(regulasi.buyPrice);
-      } else {
-        setPricePerUnit(actorName === 'Warga (General)' ? regulasi.sellWarga : regulasi.sellInstansi);
+      if (regulasi) {
+        if (trxType === 'IN') {
+          setPricePerUnit(regulasi.buyPrice);
+        } else {
+          setPricePerUnit(actorName === 'Warga (General)' ? regulasi.sellWarga : regulasi.sellInstansi);
+        }
       }
     }
-  }, [itemName, trxType, actorName]);
+  }, [itemName, trxType, actorName, isPromo]);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -166,16 +165,17 @@ export default function DashboardPage() {
     
     const qtyNum = Number(quantity);
     const regulasi = masterKomoditas[itemName];
-    const targetItemName = isPromo ? `[PROMO] ${customItemName || 'Item Custom'}` : itemName;
+    
+    // Gunakan nama item dasar, tambahkan label PROMO jika aktif
+    const targetItemName = isPromo ? `[PROMO] ${itemName}` : itemName;
 
-    if (!isPromo) {
+    if (!isPromo && regulasi) {
       if (trxType === 'IN' && qtyNum > regulasi.maxTerima) return alert(`⚠️ BATAS TERIMA!\nMaksimal ${regulasi.maxTerima} pcs per transaksi.`);
       if (trxType === 'OUT' && qtyNum > regulasi.maxJual) return alert(`⚠️ BATAS JUAL!\nMaksimal ${regulasi.maxJual} pcs per KTP.`);
     }
 
     setCartItems([...cartItems, { item: targetItemName, qty: qtyNum, price: Number(pricePerUnit) }]);
     setQuantity('');
-    if(isPromo) setCustomItemName('');
   };
 
   const handleRemoveFromCart = (index: number) => setCartItems(cartItems.filter((_, i) => i !== index));
@@ -186,9 +186,12 @@ export default function DashboardPage() {
 
     if (trxType === 'OUT') {
       for (const cart of cartItems) {
+        // Hapus label [PROMO] saat pengecekan stok agar sesuai dengan nama di DB
         const baseName = cart.item.replace('[PROMO] ', '');
         const currentStock = warehouseStock[baseName] || 0; 
-        if (!cart.item.includes('PROMO') && currentStock < cart.qty) {
+        
+        // Pengecekan stok selalu berlaku meskipun barang sedang promo
+        if (currentStock < cart.qty) {
           return alert(`❌ STOK TIDAK CUKUP!\nSisa ${formatDisplayName(baseName)}: ${currentStock.toLocaleString('id-ID')}`);
         }
       }
@@ -223,6 +226,7 @@ export default function DashboardPage() {
       setTransactions(updatedTransactions);
       setWarehouseStock(updatedStock || {});
       setCartItems([]);
+      setIsPromo(false); // Reset status promo setelah simpan nota berhasil
     } else {
       alert("Terjadi kesalahan sistem!");
     }
@@ -579,8 +583,24 @@ export default function DashboardPage() {
                       <option value="IN">Barang Masuk (Beli dari Warga)</option>
                     </select>
                   </div>
+                  
+                  {/* UPDATE: Pilih Barang beserta Toggle Promo */}
                   <div className="space-y-1.5">
-                    <label className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Pilih Jenis Barang</label>
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Pilih Jenis Barang</label>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-amber-600 dark:text-amber-400">
+                        <input 
+                          type="checkbox" 
+                          checked={isPromo} 
+                          onChange={(e) => {
+                            setIsPromo(e.target.checked);
+                            if (e.target.checked) setPricePerUnit('');
+                          }} 
+                          className="rounded text-amber-500 focus:ring-amber-400"
+                        />
+                        Harga Promo / Event
+                      </label>
+                    </div>
                     <select value={itemName} onChange={(e) => setItemName(e.target.value)} className="w-full bg-slate-50 dark:bg-[#0b0e14] border border-slate-300 dark:border-slate-700/50 p-3 rounded-xl text-slate-800 dark:text-slate-200 outline-none cursor-pointer">
                       {Object.keys(masterKomoditas)
                         .filter(barang => barang !== 'Bawang' && barang !== 'Strawberry')
@@ -588,15 +608,9 @@ export default function DashboardPage() {
                           <option key={barang} value={barang}>{formatDisplayName(barang)}</option>
                         ))
                       }
-                      <option value="PROMO">🌟 Harga Khusus (Promo / Event)</option>
                     </select>
                   </div>
-                  {isPromo && (
-                    <div className="space-y-1.5 p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-500/20 rounded-xl">
-                      <label className="text-xs text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Nama Barang Custom</label>
-                      <input type="text" value={customItemName} onChange={(e) => setCustomItemName(e.target.value)} placeholder="Contoh: Lelang Besi Tua" className="w-full mt-1 bg-white dark:bg-[#0b0e14] border border-amber-300 dark:border-amber-700/50 p-2.5 rounded-lg text-amber-800 dark:text-amber-200 outline-none focus:border-amber-500" />
-                    </div>
-                  )}
+
                   <div className="space-y-1.5">
                     <label className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">{trxType === 'IN' ? 'Sumber Barang' : 'Nama Pembeli / Bisnis'}</label>
                     {trxType === 'IN' ? (

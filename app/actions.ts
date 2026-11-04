@@ -44,27 +44,34 @@ export async function initializeDefaultStock(defaultStock: Record<string, number
   }
 }
 
-export async function saveTransaction(data: any, cartItems: Array<{item: string, qty: number}>) {
+export async function saveTransaction(data: any, cartItems: Array<{item: string, qty: number, price?: number}>) {
   try {
     await prisma.$transaction(async (tx) => {
       await tx.transaction.create({
         data: {
-          date: data.date, time: data.time, type: data.type, item: data.item, actor: data.actor,
-          qty: data.qty, price: data.price, total: data.total, gov: data.gov, officerCut: data.officerCut,
-          petugas: data.petugas // <--- Menyimpan nama petugas ke database
+          date: data.date, 
+          time: data.time, 
+          type: data.type, 
+          item: data.item, 
+          actor: data.actor,
+          qty: data.qty, 
+          price: data.price, 
+          total: data.total, 
+          gov: data.gov, 
+          officerCut: data.officerCut,
+          petugas: data.petugas
         }
       });
       
       for (const cart of cartItems) {
-        const baseName = cart.item.replace('[PROMO] ', '');
-        if (!cart.item.includes('PROMO')) {
-          const qtyChange = data.type === 'IN' ? cart.qty : -cart.qty;
-          await tx.warehouseStock.upsert({
-            where: { itemName: baseName },
-            update: { quantity: { increment: qtyChange } },
-            create: { itemName: baseName, quantity: qtyChange > 0 ? qtyChange : 0 }
-          });
-        }
+        const baseName = cart.item.replace('[PROMO] ', '').trim();
+        const qtyChange = data.type === 'IN' ? cart.qty : -cart.qty;
+        
+        await tx.warehouseStock.upsert({
+          where: { itemName: baseName },
+          update: { quantity: { increment: qtyChange } },
+          create: { itemName: baseName, quantity: qtyChange > 0 ? qtyChange : 0 }
+        });
       }
     });
     
@@ -215,47 +222,36 @@ export async function updateTransaction(id: string, updatedData: { date: string;
 
 export async function deleteTransaction(id: string) {
   try {
-    // 1. Cari transaksi berdasarkan ID
     const trx = await prisma.transaction.findUnique({ where: { id } });
     if (!trx) return { success: false, message: "Transaksi tidak ditemukan" };
-
-    // 2. Gunakan Interactive Transaction Prisma agar aman
     await prisma.$transaction(async (tx) => {
-      // Pecah string nota, misalnya: "10x Beras, 5x Tembaga" menjadi array
       const items = trx.item.split(', ');
 
       for (const itemStr of items) {
-        // Ekstrak angka dan nama barang (memisahkan berdasarkan "x ")
         const firstXIndex = itemStr.indexOf('x ');
         if (firstXIndex === -1) continue;
 
         const qty = parseInt(itemStr.substring(0, firstXIndex));
         const rawItemName = itemStr.substring(firstXIndex + 2); 
-        
-        // Bersihkan nama dari embel-embel [PROMO] jika ada
-        const cleanItemName = rawItemName.replace('[PROMO] ', '');
-
-        // Logika pengembalian stok: 
-        // Jika nota aslinya JUAL (OUT), maka stok dikembalikan (tambah)
-        // Jika nota aslinya BELI (IN), maka stok ditarik balik (kurang)
+        const cleanItemName = rawItemName.replace('[PROMO] ', '').trim();
         const isOut = trx.type === 'OUT';
 
         await tx.warehouseStock.upsert({
           where: { itemName: cleanItemName },
           update: {
-            quantity: isOut ? { increment: qty } : { decrement: qty } // <-- Telah diperbaiki menjadi 'quantity'
+            quantity: isOut ? { increment: qty } : { decrement: qty }
           },
           create: {
             itemName: cleanItemName,
-            quantity: isOut ? qty : -qty // <-- Telah diperbaiki menjadi 'quantity'
+            quantity: isOut ? qty : -qty
           }
         });
       }
 
-      // 3. Setelah stok aman, hapus transaksi dari DB
       await tx.transaction.delete({ where: { id } });
     });
 
+    revalidatePath("/dashboard");
     return { success: true, message: "Transaksi dihapus dan stok gudang berhasil disinkronisasi ulang." };
   } catch (error) {
     console.error("Gagal menghapus transaksi:", error);
