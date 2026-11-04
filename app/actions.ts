@@ -5,11 +5,25 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation"; 
 
-export async function getTransactions() {
+export async function getTransactions(limit = 20, skip = 0) {
   try {
-    return await prisma.transaction.findMany({ orderBy: { createdAt: 'desc' } });
+    const [transactions, total] = await Promise.all([
+      prisma.transaction.findMany({
+        take: limit,
+        skip: skip,
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.transaction.count()
+    ]);
+
+    return {
+      transactions,
+      total,
+      hasMore: skip + transactions.length < total
+    };
   } catch (error) {
-    return [];
+    console.error("Gagal mengambil data transaksi:", error);
+    return { transactions: [], total: 0, hasMore: false };
   }
 }
 

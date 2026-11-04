@@ -55,6 +55,10 @@ export default function DashboardPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
+  // State Pagination (Load More)
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
   // State Tema
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
@@ -112,19 +116,23 @@ export default function DashboardPage() {
           return;
         }
         setActiveUser(user);
-        const dbData = await getTransactions();
-        setTransactions(dbData);
+
+        // Ambil 20 transaksi pertama untuk performa ringan
+        const resTrx = await getTransactions(20, 0);
+        setTransactions(resTrx.transactions || []);
+        setHasMore(!!resTrx.hasMore);
+
         const dbStock = await getWarehouseStock();
         setWarehouseStock(dbStock || {});
         const dbKas = await getKasNegara();
-        setKasPresidenList(dbKas);
+        setKasPresidenList(dbKas || []);
 
         if (user.role === 'ADMIN') {
           const dbUsers = await getAllUsers();
-          setUsersList(dbUsers);
+          setUsersList(dbUsers || []);
         }
       } catch (error) {
-        console.error(error);
+        console.error("Gagal memuat data awal:", error);
       } finally {
         setIsLoading(false);
         setIsMounted(true);
@@ -135,7 +143,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (isPromo) {
-      // Jika mode promo aktif, jangan menimpa nilai pricePerUnit, biarkan user menginput manual
+      // Biarkan user memasukkan harga manual untuk promo
     } else {
       const regulasi = masterKomoditas[itemName];
       if (regulasi) {
@@ -160,13 +168,35 @@ export default function DashboardPage() {
     if (newType === 'IN') setActorName('Warga (General)');
   };
 
+  const handleLoadMore = async () => {
+    setIsLoadingMore(true);
+    try {
+      const res = await getTransactions(20, transactions.length);
+      setTransactions(prev => [...prev, ...(res.transactions || [])]);
+      setHasMore(!!res.hasMore);
+    } catch (error) {
+      console.error("Gagal memuat transaksi tambahan:", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  const refreshData = async () => {
+    const currentLimit = Math.max(20, transactions.length);
+    const [resTrx, dbStock] = await Promise.all([
+      getTransactions(currentLimit, 0),
+      getWarehouseStock()
+    ]);
+    setTransactions(resTrx.transactions || []);
+    setHasMore(!!resTrx.hasMore);
+    setWarehouseStock(dbStock || {});
+  };
+
   const handleAddToCart = () => {
     if (!quantity || Number(quantity) <= 0 || pricePerUnit === '') return alert("Data tidak valid!");
     
     const qtyNum = Number(quantity);
     const regulasi = masterKomoditas[itemName];
-    
-    // Gunakan nama item dasar, tambahkan label PROMO jika aktif
     const targetItemName = isPromo ? `[PROMO] ${itemName}` : itemName;
 
     if (!isPromo && regulasi) {
@@ -186,11 +216,9 @@ export default function DashboardPage() {
 
     if (trxType === 'OUT') {
       for (const cart of cartItems) {
-        // Hapus label [PROMO] saat pengecekan stok agar sesuai dengan nama di DB
         const baseName = cart.item.replace('[PROMO] ', '');
         const currentStock = warehouseStock[baseName] || 0; 
         
-        // Pengecekan stok selalu berlaku meskipun barang sedang promo
         if (currentStock < cart.qty) {
           return alert(`❌ STOK TIDAK CUKUP!\nSisa ${formatDisplayName(baseName)}: ${currentStock.toLocaleString('id-ID')}`);
         }
@@ -212,21 +240,18 @@ export default function DashboardPage() {
       actor: actorName,
       qty: cartItems.reduce((acc, curr) => acc + curr.qty, 0),
       price: cartItems[0].price,
-      total: totalKeseluruhan, gov, officerCut,
+      total: totalKeseluruhan, 
+      gov, 
+      officerCut,
       petugas: activeUser?.name || 'Sistem' 
     };
 
     const res = await saveTransaction(newTrxData, cartItems);
 
     if (res.success) {
-      const [updatedTransactions, updatedStock] = await Promise.all([
-        getTransactions(),
-        getWarehouseStock()
-      ]);
-      setTransactions(updatedTransactions);
-      setWarehouseStock(updatedStock || {});
+      await refreshData();
       setCartItems([]);
-      setIsPromo(false); // Reset status promo setelah simpan nota berhasil
+      setIsPromo(false);
     } else {
       alert("Terjadi kesalahan sistem!");
     }
@@ -250,12 +275,7 @@ export default function DashboardPage() {
     });
 
     if (res.success) {
-      const [updatedTransactions, updatedStock] = await Promise.all([
-        getTransactions(),
-        getWarehouseStock()
-      ]);
-      setTransactions(updatedTransactions);
-      setWarehouseStock(updatedStock || {});
+      await refreshData();
       setEditingTrx(null); 
       alert("Data transaksi berhasil diperbarui!");
     } else {
@@ -268,12 +288,7 @@ export default function DashboardPage() {
     if (confirm("⚠️ PERINGATAN!\nApakah Anda yakin ingin menghapus transaksi ini? Stok barang akan otomatis dikembalikan ke gudang.")) {
       const res = await deleteTransaction(id);
       if (res.success) {
-        const [updatedTransactions, updatedStock] = await Promise.all([
-          getTransactions(),
-          getWarehouseStock()
-        ]);
-        setTransactions(updatedTransactions);
-        setWarehouseStock(updatedStock || {});
+        await refreshData();
         alert("Berhasil! Transaksi dihapus dan stok gudang telah diperbarui.");
       } else {
         alert(res.message);
@@ -396,20 +411,14 @@ export default function DashboardPage() {
     );
   });
 
-  // WRAPPER UTAMA UNTUK TEMA TERSINKRONISASI
   return (
     <div className={theme === 'dark' ? 'dark' : ''}>
       <div className="min-h-screen bg-slate-100 dark:bg-black text-slate-800 dark:text-slate-300 relative font-sans overflow-hidden p-4 md:p-8 pb-20 transition-colors duration-700 z-0">
         
-        {/* 1. ANIMASI CAHAYA: Dua Orb Raksasa Berputar Berlawanan Arah */}
+        {/* Background Visual Effects */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150vw] h-[150vw] md:w-[90vw] md:h-[90vw] bg-gradient-to-tr from-cyan-400/20 via-blue-500/10 to-emerald-400/20 dark:from-cyan-600/30 dark:via-indigo-900/20 dark:to-emerald-600/30 blur-[80px] md:blur-[120px] rounded-full animate-[spin_20s_linear_infinite] -z-10 pointer-events-none"></div>
-        
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] md:w-[70vw] md:h-[70vw] bg-gradient-to-bl from-amber-400/10 via-transparent to-rose-400/10 dark:from-purple-600/20 dark:via-transparent dark:to-cyan-600/20 blur-[100px] md:blur-[140px] rounded-full animate-[spin_25s_linear_infinite_reverse] -z-10 pointer-events-none"></div>
-
-        {/* 2. EFEK TEKSTUR: Garis Scanline Tipis ala Monitor Hologram */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none -z-10"></div>
-        
-        {/* 3. TEMA LOGISTIK: Garis Peringatan Gudang (Glow) di Atas */}
         <div className="absolute top-0 left-0 w-full h-1.5 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#0ea5e9_10px,#0ea5e9_20px)] dark:bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,#10b981_10px,#10b981_20px)] opacity-70 z-0"></div>
 
         <div className="max-w-7xl mx-auto space-y-6 relative z-10">
@@ -438,7 +447,6 @@ export default function DashboardPage() {
                 </div>
               </div>
               
-              {/* TOMBOL TOGGLE MODE TERANG/GELAP */}
               <button onClick={toggleTheme} className="px-3 border-r border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:text-amber-500 transition-colors flex flex-col items-center group">
                 {theme === 'dark' ? <Sun className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" /> : <Moon className="w-5 h-5 group-hover:-rotate-12 transition-transform duration-300" />}
                 <span className="text-[10px] font-bold mt-1">{theme === 'dark' ? 'Terang' : 'Gelap'}</span>
@@ -584,7 +592,6 @@ export default function DashboardPage() {
                     </select>
                   </div>
                   
-                  {/* UPDATE: Pilih Barang beserta Toggle Promo */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
                       <label className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Pilih Jenis Barang</label>
@@ -745,6 +752,19 @@ export default function DashboardPage() {
                   </tbody>
                 </table>
               </div>
+
+              {/* TOMBOL LOAD MORE */}
+              {hasMore && (
+                <div className="p-4 text-center border-t border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-[#151822]/50">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={isLoadingMore}
+                    className="px-6 py-2.5 bg-cyan-50 dark:bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-500/30 font-bold rounded-xl hover:bg-cyan-100 dark:hover:bg-cyan-500/20 transition-all text-xs disabled:opacity-50 cursor-pointer"
+                  >
+                    {isLoadingMore ? "Memuat Data..." : "Tampilkan Transaksi Lainnya"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
