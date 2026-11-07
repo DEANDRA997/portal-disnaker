@@ -580,16 +580,18 @@ export default function DashboardPage() {
                 <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2"><Plus className="w-4 h-4 text-cyan-500 dark:text-cyan-400" /> Catat Transaksi Borongan</h2>
                 <form onSubmit={handleSimpanTransaksi} className="space-y-4 flex flex-col">
                   <div className="space-y-1.5">
-                    <label className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Pilih Tanggal (Backdate)</label>
-                    <input type="date" value={inputDate} onChange={(e) => setInputDate(e.target.value)} disabled={!isPetinggi} className={`w-full bg-slate-50 dark:bg-[#0b0e14] border border-slate-300 dark:border-slate-700/50 p-3 rounded-xl text-slate-800 dark:text-slate-200 outline-none ${!isPetinggi ? 'cursor-not-allowed opacity-60' : 'cursor-pointer focus:border-cyan-500'}`} />
-                    <p className="text-[10px] text-slate-500 italic">{isPetinggi ? 'Akses Petinggi: Anda dapat melakukan backdate.' : 'Otomatis terisi tanggal hari ini untuk Staff.'}</p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Tipe Transaksi</label>
-                    <select value={trxType} onChange={handleTypeChange} className="w-full bg-slate-50 dark:bg-[#0b0e14] border border-slate-300 dark:border-slate-700/50 p-3 rounded-xl text-slate-800 dark:text-slate-200 outline-none">
-                      <option value="OUT">Barang Keluar (Jual ke Bisnis/Warga)</option>
-                      <option value="IN">Barang Masuk (Beli dari Warga)</option>
-                    </select>
+                    <label className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
+                      Pilih Tanggal (Backdate)
+                    </label>
+                    <input 
+                      type="date" 
+                      value={inputDate} 
+                      onChange={(e) => setInputDate(e.target.value)} 
+                      className="w-full bg-slate-50 dark:bg-[#0b0e14] border border-slate-300 dark:border-slate-700/50 p-3 rounded-xl text-slate-800 dark:text-slate-200 outline-none cursor-pointer focus:border-cyan-500 transition-colors" 
+                    />
+                    <p className="text-[10px] text-slate-500 italic">
+                      Semua petugas dapat memilih tanggal transaksi (Backdate).
+                    </p>
                   </div>
                   
                   <div className="space-y-1.5">
