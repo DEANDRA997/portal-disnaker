@@ -595,9 +595,10 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
               )}
 
               {/* TRANSAKSI BARANG */}
-              <div className="bg-white/90 dark:bg-[#151822]/80 backdrop-blur-md p-6 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-xl h-fit transition-colors">
+<div className="bg-white/90 dark:bg-[#151822]/80 backdrop-blur-md p-6 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-xl h-fit transition-colors">
                 <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2"><Plus className="w-4 h-4 text-cyan-500 dark:text-cyan-400" /> Catat Transaksi Borongan</h2>
                 <form onSubmit={handleSimpanTransaksi} className="space-y-4 flex flex-col">
+                  
                   <div className="space-y-1.5">
                     <label className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
                       Pilih Tanggal (Backdate)
@@ -611,6 +612,40 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
                     <p className="text-[10px] text-slate-500 italic">
                       Semua petugas dapat memilih tanggal transaksi (Backdate).
                     </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Arus Barang (Tipe)</label>
+                    <select value={trxType} onChange={handleTypeChange} className="w-full bg-slate-50 dark:bg-[#0b0e14] border border-slate-300 dark:border-slate-700/50 p-3 rounded-xl text-slate-800 dark:text-slate-200 outline-none cursor-pointer focus:border-cyan-500 transition-colors">
+                      <option value="OUT">Barang Keluar (Jual ke Warga/Bisnis)</option>
+                      <option value="IN">Barang Masuk (Beli dari Warga)</option>
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Pilih Jenis Barang</label>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-amber-600 dark:text-amber-400">
+                        <input 
+                          type="checkbox" 
+                          checked={isPromo} 
+                          onChange={(e) => {
+                            setIsPromo(e.target.checked);
+                            if (e.target.checked) setPricePerUnit('');
+                          }} 
+                          className="rounded text-amber-500 focus:ring-amber-400"
+                        />
+                        Harga Promo / Event
+                      </label>
+                    </div>
+                    <select value={itemName} onChange={(e) => setItemName(e.target.value)} className="w-full bg-slate-50 dark:bg-[#0b0e14] border border-slate-300 dark:border-slate-700/50 p-3 rounded-xl text-slate-800 dark:text-slate-200 outline-none cursor-pointer">
+                      {Object.keys(masterKomoditas)
+                        .filter(barang => barang !== 'Bawang' && barang !== 'Strawberry')
+                        .map((barang) => (
+                          <option key={barang} value={barang}>{formatDisplayName(barang)}</option>
+                        ))
+                      }
+                    </select>
                   </div>
                   
                   <div className="space-y-1.5">
