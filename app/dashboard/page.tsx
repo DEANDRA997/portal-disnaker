@@ -55,11 +55,9 @@ export default function DashboardPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  // State Pagination (Load More)
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // State Tema
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   const [activeUser, setActiveUser] = useState<{name: string, role: string} | null>(null);
@@ -67,17 +65,15 @@ export default function DashboardPage() {
   const [warehouseStock, setWarehouseStock] = useState<Record<string, number>>({});
   const [usersList, setUsersList] = useState<any[]>([]);
   const [kasPresidenList, setKasPresidenList] = useState<any[]>([]); 
-  const [auditLogs, setAuditLogs] = useState<any[]>([]); // State untuk menyimpan log
+  const [auditLogs, setAuditLogs] = useState<any[]>([]); 
   
   const [summaryTab, setSummaryTab] = useState<'HARI_INI' | 'BULAN_INI' | 'CUSTOM'>('HARI_INI');
   const [filterDate, setFilterDate] = useState(''); 
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Edit & Update State
   const [editingTrx, setEditingTrx] = useState<any | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Input Transaksi
   const [isSaving, setIsSaving] = useState(false);
   const todayStr = new Date().toLocaleDateString('en-CA');
   const [inputDate, setInputDate] = useState(todayStr); 
@@ -89,7 +85,6 @@ export default function DashboardPage() {
   const [isPromo, setIsPromo] = useState(false);
   const [cartItems, setCartItems] = useState<Array<{item: string; qty: number; price: number;}>>([]);
 
-  // Form Users & Kas
   const [newUsername, setNewUsername] = useState('');
   const [newName, setNewName] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -103,7 +98,6 @@ export default function DashboardPage() {
   const allActors = ["Warga (General)", "Nusantara Resto", "Kungkungkhap Resto", "969 Resto", "Tekno garage", "969 garage", "stunberg garage", "max garage", "kungkung garage", "maison rainheart", "kedai YGM", "YGM Center", "sumber rezeki", "Up & Atom"];
 
   useEffect(() => {
-    // Muat preferensi tema dari local storage
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'light' || savedTheme === 'dark') {
       setTheme(savedTheme);
@@ -118,7 +112,6 @@ export default function DashboardPage() {
         }
         setActiveUser(user);
 
-        // Ambil 20 transaksi pertama untuk performa ringan
         const resTrx = await getTransactions(20, 0);
         setTransactions(resTrx.transactions || []);
         setHasMore(!!resTrx.hasMore);
@@ -146,9 +139,7 @@ export default function DashboardPage() {
   }, []); 
 
   useEffect(() => {
-    if (isPromo) {
-      // Biarkan user memasukkan harga manual untuk promo
-    } else {
+    if (!isPromo) {
       const regulasi = masterKomoditas[itemName];
       if (regulasi) {
         if (trxType === 'IN') {
@@ -195,7 +186,6 @@ export default function DashboardPage() {
     setHasMore(!!resTrx.hasMore);
     setWarehouseStock(dbStock || {});
 
-    // Refresh log jika admin
     if (activeUser?.role.toUpperCase() === 'ADMIN') {
         const logs = await getAuditLogs();
         setAuditLogs(logs || []);
@@ -220,7 +210,7 @@ export default function DashboardPage() {
 
   const handleRemoveFromCart = (index: number) => setCartItems(cartItems.filter((_, i) => i !== index));
 
-const handleSimpanTransaksi = async (e: React.FormEvent) => {
+  const handleSimpanTransaksi = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cartItems.length === 0) return alert("Nota kosong! Tambahkan barang ke keranjang.");
 
@@ -285,7 +275,6 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
     });
 
     if (res.success) {
-      // 1. UI INSTAN: Modal langsung ditutup
       setEditingTrx(null); 
       setIsUpdating(false);
       refreshData(); 
@@ -297,17 +286,11 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
 
   const handleHapusTransaksi = async (id: string) => {
     if (confirm("⚠️ PERINGATAN!\nApakah Anda yakin ingin menghapus transaksi ini? Stok barang akan otomatis dikembalikan ke gudang.")) {
-      
-      // 1. OPTIMISTIC UPDATE: Hapus data dari layar (state) secara instan!
       setTransactions(prev => prev.filter(trx => trx.id !== id));
-      
-      // 2. BACKGROUND PROCESS: Eksekusi ke database tanpa memblokir UI
       deleteTransaction(id).then(res => {
         if (res.success) {
-          // Sinkronisasi ulang stok gudang secara diam-diam
           refreshData(); 
         } else {
-          // Jika ternyata gagal di server (misal koneksi putus), kembalikan data dan beri tahu user
           alert(res.message);
           refreshData(); 
         }
@@ -434,7 +417,6 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
     <div className={theme === 'dark' ? 'dark' : ''}>
       <div className="min-h-screen bg-slate-100 dark:bg-black text-slate-800 dark:text-slate-300 relative font-sans overflow-hidden p-4 md:p-8 pb-20 transition-colors duration-700 z-0">
         
-        {/* Background Visual Effects */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150vw] h-[150vw] md:w-[90vw] md:h-[90vw] bg-gradient-to-tr from-cyan-400/20 via-blue-500/10 to-emerald-400/20 dark:from-cyan-600/30 dark:via-indigo-900/20 dark:to-emerald-600/30 blur-[80px] md:blur-[120px] rounded-full animate-[spin_20s_linear_infinite] -z-10 pointer-events-none"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vw] h-[120vw] md:w-[70vw] md:h-[70vw] bg-gradient-to-bl from-amber-400/10 via-transparent to-rose-400/10 dark:from-purple-600/20 dark:via-transparent dark:to-cyan-600/20 blur-[100px] md:blur-[140px] rounded-full animate-[spin_25s_linear_infinite_reverse] -z-10 pointer-events-none"></div>
         <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none -z-10"></div>
@@ -442,7 +424,6 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
 
         <div className="max-w-7xl mx-auto space-y-6 relative z-10">
           
-          {/* HEADER */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="flex items-center gap-4 bg-white dark:bg-white/5 backdrop-blur-md border border-slate-200 dark:border-white/10 p-4 rounded-2xl shadow-sm dark:shadow-lg transition-colors">
               <div className="p-3 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-600 transition-colors">
@@ -478,7 +459,6 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
             </div>
           </div>
 
-          {/* STOCK GUDANG */}
           <div className="bg-white/90 dark:bg-[#151822]/80 backdrop-blur-md p-5 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-xl transition-colors">
             <div className="flex items-center gap-2 mb-4">
               <Package className="w-5 h-5 text-amber-500 dark:text-amber-400" />
@@ -514,7 +494,6 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
             </div>
           </div>
 
-          {/* REKAPAN KEUANGAN & FILTERING */}
           <div>
             <div className="flex flex-col md:flex-row gap-3 mb-4 justify-between items-start md:items-center">
               <div className="flex flex-wrap items-center gap-2">
@@ -566,11 +545,9 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
             </div>
           </div>
 
-          {/* INPUT TRANSAKSI & BUKU BESAR */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1 space-y-6">
               
-              {/* KAS PRESIDEN */}
               {isMenteriOrAdmin && (
                 <div className="bg-white/90 dark:bg-[#151822]/80 backdrop-blur-md p-6 rounded-2xl border border-emerald-200 dark:border-emerald-500/30 shadow-sm dark:shadow-xl dark:shadow-emerald-900/10 transition-colors">
                   <h2 className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-4 flex items-center gap-2"><Banknote className="w-5 h-5" /> Terima Kas Presiden</h2>
@@ -594,8 +571,7 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
                 </div>
               )}
 
-              {/* TRANSAKSI BARANG */}
-<div className="bg-white/90 dark:bg-[#151822]/80 backdrop-blur-md p-6 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-xl h-fit transition-colors">
+              <div className="bg-white/90 dark:bg-[#151822]/80 backdrop-blur-md p-6 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-xl h-fit transition-colors">
                 <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2"><Plus className="w-4 h-4 text-cyan-500 dark:text-cyan-400" /> Catat Transaksi Borongan</h2>
                 <form onSubmit={handleSimpanTransaksi} className="space-y-4 flex flex-col">
                   
@@ -619,32 +595,6 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
                     <select value={trxType} onChange={handleTypeChange} className="w-full bg-slate-50 dark:bg-[#0b0e14] border border-slate-300 dark:border-slate-700/50 p-3 rounded-xl text-slate-800 dark:text-slate-200 outline-none cursor-pointer focus:border-cyan-500 transition-colors">
                       <option value="OUT">Barang Keluar (Jual ke Warga/Bisnis)</option>
                       <option value="IN">Barang Masuk (Beli dari Warga)</option>
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-center">
-                      <label className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Pilih Jenis Barang</label>
-                      <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-amber-600 dark:text-amber-400">
-                        <input 
-                          type="checkbox" 
-                          checked={isPromo} 
-                          onChange={(e) => {
-                            setIsPromo(e.target.checked);
-                            if (e.target.checked) setPricePerUnit('');
-                          }} 
-                          className="rounded text-amber-500 focus:ring-amber-400"
-                        />
-                        Harga Promo / Event
-                      </label>
-                    </div>
-                    <select value={itemName} onChange={(e) => setItemName(e.target.value)} className="w-full bg-slate-50 dark:bg-[#0b0e14] border border-slate-300 dark:border-slate-700/50 p-3 rounded-xl text-slate-800 dark:text-slate-200 outline-none cursor-pointer">
-                      {Object.keys(masterKomoditas)
-                        .filter(barang => barang !== 'Bawang' && barang !== 'Strawberry')
-                        .map((barang) => (
-                          <option key={barang} value={barang}>{formatDisplayName(barang)}</option>
-                        ))
-                      }
                     </select>
                   </div>
                   
@@ -804,7 +754,6 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
                 </table>
               </div>
 
-              {/* TOMBOL LOAD MORE */}
               {hasMore && (
                 <div className="p-4 text-center border-t border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-[#151822]/50">
                   <button
@@ -819,7 +768,6 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
             </div>
           </div>
 
-          {/* PUSAT MANAJEMEN PEGAWAI (HANYA ADMIN) */}
           {isAdmin && (
             <div className="pt-8 border-t border-slate-200 dark:border-white/10 mt-10">
               <div className="mb-6">
@@ -909,7 +857,6 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
                   </div>
                 </div>
                 
-                {/* TABEL LOG AKTIVITAS (KHUSUS ADMIN) */}
                 <div className="lg:col-span-3 mt-6 bg-white/90 dark:bg-[#151822]/80 backdrop-blur-md rounded-2xl border border-rose-200 dark:border-rose-500/20 shadow-sm dark:shadow-xl dark:shadow-rose-900/10 overflow-hidden flex flex-col transition-colors">
                   <div className="p-6 border-b border-rose-200 dark:border-rose-500/20 bg-rose-50/50 dark:bg-rose-900/10">
                     <h2 className="text-lg font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2">
@@ -961,7 +908,6 @@ const handleSimpanTransaksi = async (e: React.FormEvent) => {
             </div>
           )}
 
-          {/* MODAL EDIT TRANSAKSI */}
           {editingTrx && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm p-4">
               <div className="bg-white dark:bg-[#151822] border border-slate-200 dark:border-white/10 p-6 rounded-2xl shadow-2xl w-full max-w-md transition-colors">
