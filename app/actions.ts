@@ -219,14 +219,34 @@ export async function addKasNegara(data: { tanggal: string; jumlah: number; kete
 
 export async function updateTransaction(id: string, updatedData: { date: string; time: string; actor: string }) {
   try {
-    await prisma.transaction.update({
-      where: { id: id },
-      data: {
-        date: updatedData.date,
-        time: updatedData.time,
-        actor: updatedData.actor,
-      }
+    const user = await getActiveUser();
+    const executorName = user?.name || "Tidak Diketahui";
+    const executorRole = user?.role || "UNKNOWN";
+
+    const oldTrx = await prisma.transaction.findUnique({ where: { id } });
+    if (!oldTrx) return { success: false, message: "Transaksi tidak ditemukan." };
+
+    await prisma.$transaction(async (tx) => {
+      await tx.transaction.update({
+        where: { id: id },
+        data: {
+          date: updatedData.date,
+          time: updatedData.time,
+          actor: updatedData.actor,
+        }
+      });
+
+      // Simpan jejak edit ke database AuditLog
+      await tx.auditLog.create({
+        data: {
+          action: "EDIT_TRANSAKSI",
+          details: `Mengedit transaksi ID ${id} (${oldTrx.item}). Pihak: ${oldTrx.actor} -> ${updatedData.actor}. Tanggal: ${oldTrx.date} -> ${updatedData.date}.`,
+          executor: executorName,
+          role: executorRole
+        }
+      });
     });
+
     return { success: true, message: "Transaksi berhasil diperbarui" };
   } catch (error) {
     console.error("Gagal update transaksi:", error);
@@ -236,8 +256,13 @@ export async function updateTransaction(id: string, updatedData: { date: string;
 
 export async function deleteTransaction(id: string) {
   try {
+    const user = await getActiveUser();
+    const executorName = user?.name || "Tidak Diketahui";
+    const executorRole = user?.role || "UNKNOWN";
+
     const trx = await prisma.transaction.findUnique({ where: { id } });
     if (!trx) return { success: false, message: "Transaksi tidak ditemukan" };
+    
     await prisma.$transaction(async (tx) => {
       const items = trx.item.split(', ');
 
@@ -263,6 +288,16 @@ export async function deleteTransaction(id: string) {
       }
 
       await tx.transaction.delete({ where: { id } });
+
+      // Simpan jejak hapus ke database AuditLog
+      await tx.auditLog.create({
+        data: {
+          action: "HAPUS_TRANSAKSI",
+          details: `Menghapus transaksi senilai $${trx.total}. Barang: ${trx.item}. Pihak Terkait: ${trx.actor}. Diinput awal oleh: ${trx.petugas}`,
+          executor: executorName,
+          role: executorRole
+        }
+      });
     });
 
     revalidatePath("/dashboard");
@@ -270,5 +305,20 @@ export async function deleteTransaction(id: string) {
   } catch (error) {
     console.error("Gagal menghapus transaksi:", error);
     return { success: false, message: "Gagal menghapus dan memulihkan stok di database." };
+  }
+}
+
+export async function getAuditLogs() {
+  try {
+    const user = await getActiveUser();
+    // Hanya Admin yang bisa mengambil data riwayat ini
+    if (user?.role.toUpperCase() !== 'ADMIN') return [];
+
+    return await prisma.auditLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100 // Tampilkan 100 log terbaru
+    });
+  } catch (error) {
+    return [];
   }
 }

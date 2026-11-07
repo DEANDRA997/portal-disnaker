@@ -52,3 +52,12 @@ model KasNegara {
   penerima   String
   createdAt  DateTime @default(now())
 }
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String   // "EDIT_TRANSAKSI" atau "HAPUS_TRANSAKSI"
+  details   String   // Detail transaksi yang diubah/dihapus
+  executor  String   // Nama pengguna yang melakukan tindakan
+  role      String   // Jabatan pengguna yang melakukan
+  createdAt DateTime @default(now())
+}

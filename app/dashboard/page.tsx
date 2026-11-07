@@ -12,7 +12,7 @@ import {
 import { 
   getTransactions, saveTransaction, getWarehouseStock, getActiveUser, logoutUser, 
   getAllUsers, createUser, resetUserPassword, deleteUser, getKasNegara, addKasNegara,
-  updateTransaction, deleteTransaction 
+  updateTransaction, deleteTransaction, getAuditLogs 
 } from '../actions';
 
 const masterKomoditas: Record<string, { buyPrice: number; sellInstansi: number; sellWarga: number; maxTerima: number; maxJual: number; stokMax: number; minHijau: number; }> = {
@@ -67,6 +67,7 @@ export default function DashboardPage() {
   const [warehouseStock, setWarehouseStock] = useState<Record<string, number>>({});
   const [usersList, setUsersList] = useState<any[]>([]);
   const [kasPresidenList, setKasPresidenList] = useState<any[]>([]); 
+  const [auditLogs, setAuditLogs] = useState<any[]>([]); // State untuk menyimpan log
   
   const [summaryTab, setSummaryTab] = useState<'HARI_INI' | 'BULAN_INI' | 'CUSTOM'>('HARI_INI');
   const [filterDate, setFilterDate] = useState(''); 
@@ -127,9 +128,12 @@ export default function DashboardPage() {
         const dbKas = await getKasNegara();
         setKasPresidenList(dbKas || []);
 
-        if (user.role === 'ADMIN') {
+        if (user.role.toUpperCase() === 'ADMIN') {
           const dbUsers = await getAllUsers();
           setUsersList(dbUsers || []);
+          
+          const logs = await getAuditLogs();
+          setAuditLogs(logs || []);
         }
       } catch (error) {
         console.error("Gagal memuat data awal:", error);
@@ -190,6 +194,12 @@ export default function DashboardPage() {
     setTransactions(resTrx.transactions || []);
     setHasMore(!!resTrx.hasMore);
     setWarehouseStock(dbStock || {});
+
+    // Refresh log jika admin
+    if (activeUser?.role.toUpperCase() === 'ADMIN') {
+        const logs = await getAuditLogs();
+        setAuditLogs(logs || []);
+    }
   };
 
   const handleAddToCart = () => {
@@ -734,17 +744,12 @@ export default function DashboardPage() {
                             <td className="px-2 py-3 text-right"><span className="font-bold text-sm text-blue-600 dark:text-blue-400">{trx.officerCut > 0 ? `+$${trx.officerCut.toLocaleString('en-US')}` : '+$0'}</span></td>
                             <td className="px-2 py-3">
                               <div className="flex items-center justify-center gap-1">
-                                {isPetinggi && (
                                   <button onClick={() => handleEditTransaksi(trx)} className="p-1.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-500/20 rounded-lg transition-colors" title="Edit Transaksi">
                                     <Edit className="w-4 h-4" />
                                   </button>
-                                )}
-                                {isMenteriOrAdmin && (
                                   <button onClick={() => handleHapusTransaksi(trx.id)} className="p-1.5 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors" title="Hapus Transaksi">
                                     <Trash2 className="w-4 h-4" />
                                   </button>
-                                )}
-                                {!isPetinggi && <span className="text-xs text-slate-400 dark:text-slate-500">-</span>}
                               </div>
                             </td>
                           </tr>
@@ -774,8 +779,8 @@ export default function DashboardPage() {
           {isAdmin && (
             <div className="pt-8 border-t border-slate-200 dark:border-white/10 mt-10">
               <div className="mb-6">
-                <h1 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2"><ShieldAlert className="text-rose-500 dark:text-rose-400" /> Pusat Manajemen Pegawai & Akses Kota</h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Panel kendali tertinggi untuk mengatur seluruh otoritas server</p>
+                <h1 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2"><ShieldAlert className="text-rose-500 dark:text-rose-400" /> Pusat Manajemen Khusus Admin</h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Panel kendali tertinggi untuk mengatur otoritas pegawai dan memantau log sistem.</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -851,6 +856,55 @@ export default function DashboardPage() {
                                     <Trash2 className="w-4 h-4" />
                                   </button>
                                 </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                
+                {/* TABEL LOG AKTIVITAS (KHUSUS ADMIN) */}
+                <div className="lg:col-span-3 mt-6 bg-white/90 dark:bg-[#151822]/80 backdrop-blur-md rounded-2xl border border-rose-200 dark:border-rose-500/20 shadow-sm dark:shadow-xl dark:shadow-rose-900/10 overflow-hidden flex flex-col transition-colors">
+                  <div className="p-6 border-b border-rose-200 dark:border-rose-500/20 bg-rose-50/50 dark:bg-rose-900/10">
+                    <h2 className="text-lg font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5" /> Catatan Aktivitas Sensitif (Audit Log)
+                    </h2>
+                    <p className="text-sm text-rose-500 dark:text-rose-500/80 mt-1">
+                      Pantau siapa saja yang mengedit atau menghapus riwayat transaksi. Hanya terlihat oleh Superadmin.
+                    </p>
+                  </div>
+                  <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="sticky top-0 bg-rose-50 dark:bg-rose-900/20 z-10 shadow-sm">
+                        <tr className="text-[10px] uppercase tracking-widest text-rose-500 font-bold border-b border-rose-200 dark:border-rose-500/20">
+                          <th className="px-4 py-3">Waktu</th>
+                          <th className="px-4 py-3">Eksekutor</th>
+                          <th className="px-4 py-3">Tindakan</th>
+                          <th className="px-4 py-3">Rincian Lengkap</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-sm">
+                        {auditLogs.length === 0 ? (
+                          <tr><td colSpan={4} className="p-8 text-center text-slate-500">Belum ada aktivitas mencurigakan.</td></tr>
+                        ) : (
+                          auditLogs.map((log) => (
+                            <tr key={log.id} className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
+                              <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
+                                {new Date(log.createdAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className="font-bold text-slate-800 dark:text-slate-200">{log.executor}</span>
+                                <span className="block text-[10px] text-slate-500 uppercase">{log.role}</span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold ${log.action === 'HAPUS_TRANSAKSI' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                  {log.action.replace('_', ' ')}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 max-w-md">
+                                {log.details}
                               </td>
                             </tr>
                           ))
