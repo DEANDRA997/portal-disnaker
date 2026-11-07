@@ -5,6 +5,24 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation"; 
 
+// --- HELPER OTORISASI KHUSUS SUPERADMIN ---
+async function requireAuth(allowedRoles?: string[]) {
+  const user = await getActiveUser();
+  if (!user) {
+    throw new Error("Akses Ditolak: Anda belum login.");
+  }
+
+  if (allowedRoles && allowedRoles.length > 0) {
+    const userRole = user.role.toUpperCase().trim();
+    const isAllowed = allowedRoles.some(r => r.toUpperCase() === userRole);
+    if (!isAllowed) {
+      throw new Error(`Akses Ditolak: Jabatan ${userRole} tidak memiliki izin otoritas ini.`);
+    }
+  }
+
+  return user; 
+}
+
 export async function getTransactions(limit = 20, skip = 0) {
   try {
     const [transactions, total] = await Promise.all([
@@ -108,13 +126,15 @@ export async function loginUser(username: string, password: string) {
     const cookieStore = await cookies();
     const isProduction = process.env.NODE_ENV === 'production';
     
+    // Cookie diamankan dengan HttpOnly
     cookieStore.set({
       name: 'userRole',
       value: user.role,
       maxAge: 86400,
       path: '/',
       secure: isProduction,
-      sameSite: 'lax'
+      sameSite: 'lax',
+      httpOnly: true 
     });
 
     cookieStore.set({
@@ -123,7 +143,8 @@ export async function loginUser(username: string, password: string) {
       maxAge: 86400,
       path: '/',
       secure: isProduction,
-      sameSite: 'lax'
+      sameSite: 'lax',
+      httpOnly: true
     });
 
     isSuccess = true;
@@ -156,8 +177,13 @@ export async function getActiveUser() {
   return { role, name };
 }
 
+// ------------------------------------------------------------------
+// PUSAT MANAJEMEN PEGAWAI (DIKUNCI MUTLAK UNTUK ADMIN)
+// ------------------------------------------------------------------
+
 export async function getAllUsers() {
   try {
+    await requireAuth(['ADMIN']);
     return await prisma.user.findMany({
       orderBy: { role: 'asc' } 
     });
@@ -168,34 +194,37 @@ export async function getAllUsers() {
 
 export async function createUser(data: { username: string, name: string, role: string, password: string }) {
   try {
+    await requireAuth(['ADMIN']);
     await prisma.user.create({ data });
     revalidatePath("/dashboard");
     return { success: true };
-  } catch (error) {
-    return { success: false, message: 'Gagal! ID Petugas mungkin sudah dipakai.' };
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Gagal! ID Petugas mungkin sudah dipakai.' };
   }
 }
 
 export async function resetUserPassword(id: string, newPassword: string) {
   try {
+    await requireAuth(['ADMIN']);
     await prisma.user.update({
       where: { id },
       data: { password: newPassword }
     });
     revalidatePath("/dashboard");
     return { success: true };
-  } catch (error) {
-    return { success: false, message: 'Gagal mereset kata sandi.' };
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Gagal mereset kata sandi.' };
   }
 }
 
 export async function deleteUser(id: string) {
   try {
+    await requireAuth(['ADMIN']);
     await prisma.user.delete({ where: { id } });
     revalidatePath("/dashboard");
     return { success: true };
-  } catch (error) {
-    return { success: false, message: 'Gagal menghapus pegawai.' };
+  } catch (error: any) {
+    return { success: false, message: error.message || 'Gagal menghapus pegawai.' };
   }
 }
 
@@ -219,6 +248,7 @@ export async function addKasNegara(data: { tanggal: string; jumlah: number; kete
 
 export async function updateTransaction(id: string, updatedData: { date: string; time: string; actor: string }) {
   try {
+    // Ambil data user untuk dicatat di Log, tanpa memblokir proses edit
     const user = await getActiveUser();
     const executorName = user?.name || "Tidak Diketahui";
     const executorRole = user?.role || "UNKNOWN";
@@ -256,6 +286,7 @@ export async function updateTransaction(id: string, updatedData: { date: string;
 
 export async function deleteTransaction(id: string) {
   try {
+    // Ambil data user untuk dicatat di Log, tanpa memblokir proses hapus
     const user = await getActiveUser();
     const executorName = user?.name || "Tidak Diketahui";
     const executorRole = user?.role || "UNKNOWN";
@@ -311,12 +342,12 @@ export async function deleteTransaction(id: string) {
 export async function getAuditLogs() {
   try {
     const user = await getActiveUser();
-    // Hanya Admin yang bisa mengambil data riwayat ini
+    // 🔒 Hanya Admin yang bisa melihat data riwayat ini
     if (user?.role.toUpperCase() !== 'ADMIN') return [];
 
     return await prisma.auditLog.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 100 // Tampilkan 100 log terbaru
+      take: 100 
     });
   } catch (error) {
     return [];

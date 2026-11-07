@@ -220,7 +220,7 @@ export default function DashboardPage() {
 
   const handleRemoveFromCart = (index: number) => setCartItems(cartItems.filter((_, i) => i !== index));
 
-  const handleSimpanTransaksi = async (e: React.FormEvent) => {
+const handleSimpanTransaksi = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cartItems.length === 0) return alert("Nota kosong! Tambahkan barang ke keranjang.");
 
@@ -259,14 +259,14 @@ export default function DashboardPage() {
     const res = await saveTransaction(newTrxData, cartItems);
 
     if (res.success) {
-      await refreshData();
       setCartItems([]);
       setIsPromo(false);
+      setIsSaving(false); 
+      refreshData(); 
     } else {
       alert("Terjadi kesalahan sistem!");
+      setIsSaving(false);
     }
-    
-    setIsSaving(false);
   };
 
   const handleEditTransaksi = (trx: any) => {
@@ -285,24 +285,33 @@ export default function DashboardPage() {
     });
 
     if (res.success) {
-      await refreshData();
+      // 1. UI INSTAN: Modal langsung ditutup
       setEditingTrx(null); 
-      alert("Data transaksi berhasil diperbarui!");
+      setIsUpdating(false);
+      refreshData(); 
     } else {
       alert(res.message);
+      setIsUpdating(false);
     }
-    setIsUpdating(false);
   };
 
   const handleHapusTransaksi = async (id: string) => {
     if (confirm("⚠️ PERINGATAN!\nApakah Anda yakin ingin menghapus transaksi ini? Stok barang akan otomatis dikembalikan ke gudang.")) {
-      const res = await deleteTransaction(id);
-      if (res.success) {
-        await refreshData();
-        alert("Berhasil! Transaksi dihapus dan stok gudang telah diperbarui.");
-      } else {
-        alert(res.message);
-      }
+      
+      // 1. OPTIMISTIC UPDATE: Hapus data dari layar (state) secara instan!
+      setTransactions(prev => prev.filter(trx => trx.id !== id));
+      
+      // 2. BACKGROUND PROCESS: Eksekusi ke database tanpa memblokir UI
+      deleteTransaction(id).then(res => {
+        if (res.success) {
+          // Sinkronisasi ulang stok gudang secara diam-diam
+          refreshData(); 
+        } else {
+          // Jika ternyata gagal di server (misal koneksi putus), kembalikan data dan beri tahu user
+          alert(res.message);
+          refreshData(); 
+        }
+      });
     }
   };
 
