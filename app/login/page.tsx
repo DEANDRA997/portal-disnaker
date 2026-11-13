@@ -11,6 +11,8 @@ import {
   ArrowRight,
   CheckCircle2,
   AlertCircle,
+  MessageCircle,
+  ExternalLink,
 } from "lucide-react";
 import { loginUser } from "../actions";
 
@@ -39,15 +41,11 @@ export default function LoginPage() {
     setErrorMsg("");
 
     try {
-      // loginUser tetap menggunakan mekanisme autentikasi V1.
-      // Server Action perlu mengembalikan { success: true } ketika valid.
       const res = await loginUser(username.trim(), password);
 
       if (res?.success === true) {
         setIsLoading(false);
         setIsOpening(true);
-
-        // Durasi pintu + efek kamera masuk. Setelah itu baru buka dashboard.
         window.setTimeout(() => {
           router.replace("/dashboard");
         }, 2700);
@@ -316,6 +314,27 @@ export default function LoginPage() {
                 <div className="access-caption">Menyiapkan ruang kerja...</div>
               </div>
             )}
+
+            {!isOpening && (
+              <a
+                className="login-support"
+                href="https://discord.com/users/882646127541903361"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Hubungi administrator melalui Discord"
+              >
+                <span className="login-support-icon" aria-hidden="true">
+                  <MessageCircle size={19} />
+                </span>
+                <span className="login-support-copy">
+                  <strong>Butuh bantuan?</strong>
+                  <small>Kesulitan masuk? Hubungi administrator melalui Discord.</small>
+                </span>
+                <span className="login-support-action">
+                  Hubungi <ExternalLink size={14} />
+                </span>
+              </a>
+            )}
           </section>
         </div>
       </main>
@@ -511,6 +530,14 @@ export default function LoginPage() {
 .warehouse-login .login-panel-foot{margin-top:17px;padding-top:13px;border-top:1px solid #4bb39d2b;display:flex;align-items:center;justify-content:space-between;gap:10px;color:#6e9e92;font-size:8px;letter-spacing:.12em;text-transform:uppercase}
 .warehouse-login .login-panel-foot span{display:flex;align-items:center;gap:6px}
 .warehouse-login .login-panel-foot i{width:6px;height:6px;border-radius:50%;background:#39e9a9;box-shadow:0 0 9px #39e9a9}
+.warehouse-login .login-support{position:relative;z-index:1;display:flex;align-items:center;gap:11px;margin-top:17px;padding:13px 12px;border:1px solid rgba(88,111,247,.38);border-radius:12px;background:linear-gradient(110deg,rgba(88,101,242,.13),rgba(10,73,67,.24));color:#eafff9;text-decoration:none;transition:transform .2s ease,border-color .2s ease,background .2s ease,box-shadow .2s ease}
+.warehouse-login .login-support:hover{transform:translateY(-2px);border-color:rgba(125,139,255,.75);background:linear-gradient(110deg,rgba(88,101,242,.2),rgba(10,73,67,.34));box-shadow:0 9px 24px rgba(0,12,30,.22)}
+.warehouse-login .login-support:focus-visible{outline:2px solid #a5b4fc;outline-offset:3px}
+.warehouse-login .login-support-icon{width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid rgba(133,146,255,.4);border-radius:11px;background:rgba(88,101,242,.22);color:#aab4ff}
+.warehouse-login .login-support-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.warehouse-login .login-support-copy strong{color:#ecf0ff;font-size:11px;font-weight:850;letter-spacing:.03em}
+.warehouse-login .login-support-copy small{color:#a5b5c5;font-size:9px;line-height:1.5}
+.warehouse-login .login-support-action{display:inline-flex;align-items:center;gap:5px;flex:none;color:#c5ccff;font-size:9px;font-weight:850;letter-spacing:.04em}
 .warehouse-login .access-progress{position:relative;z-index:1;padding:12px 0 4px;text-align:center;animation:progressAppear .4s ease both}
 .warehouse-login .access-check{width:58px;height:58px;margin:0 auto 15px;display:grid;place-items:center;border-radius:50%;color:#ffdc70;border:1px solid #e3b43c99;background:#ffbd3515;box-shadow:0 0 0 7px #ffbd350d,0 0 32px #ffbd3525}
 .warehouse-login .access-progress h2{margin:0;color:#f4fff9;font-size:17px;font-weight:900;letter-spacing:.05em}
@@ -528,7 +555,7 @@ export default function LoginPage() {
 .warehouse-login.is-entering::after{opacity:.15}
 @media(max-width:1050px){.warehouse-login .entry-layout{grid-template-columns:minmax(0,1fr) minmax(300px,350px);gap:18px}.warehouse-login .stage{min-height:320px}}
 @media(max-width:820px){.warehouse-login .entry-layout{grid-template-columns:1fr;gap:16px;max-width:760px}.warehouse-login .stage-wrap{max-width:760px;margin:auto;width:100%}.warehouse-login .stage{min-height:300px;max-height:420px}.warehouse-login .login-panel{max-width:520px;margin:0 auto}.warehouse-login .main{padding-top:24px}}
-@media(max-width:520px){.warehouse-login .main{padding-top:20px}.warehouse-login .intro{margin-bottom:4px}.warehouse-login .stage{min-height:250px;aspect-ratio:1.22;max-height:none}.warehouse-login .login-panel{padding:21px 17px 17px;border-radius:15px}.warehouse-login .login-panel-head h2{font-size:15px}.warehouse-login .footer{padding-bottom:18px}.warehouse-login .login-panel-foot{font-size:7px}}
+@media(max-width:520px){.warehouse-login .main{padding-top:20px}.warehouse-login .intro{margin-bottom:4px}.warehouse-login .stage{min-height:250px;aspect-ratio:1.22;max-height:none}.warehouse-login .login-panel{padding:21px 17px 17px;border-radius:15px}.warehouse-login .login-panel-head h2{font-size:15px}.warehouse-login .footer{padding-bottom:18px}.warehouse-login .login-panel-foot{font-size:7px}.warehouse-login .login-support{gap:9px;padding:11px 10px}.warehouse-login .login-support-icon{width:34px;height:34px}.warehouse-login .login-support-copy small{font-size:8px}.warehouse-login .login-support-action{font-size:8px}}
 @media(prefers-reduced-motion:reduce){.warehouse-login.is-entering .stage-wrap{animation:none;opacity:0}.warehouse-login .access-meter span{animation-duration:.01ms}}
       `}</style>
     </div>

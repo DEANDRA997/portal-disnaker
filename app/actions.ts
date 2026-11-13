@@ -168,8 +168,6 @@ export async function loginUser(username: string, password: string) {
       httpOnly: true,
     });
 
-    // Jangan redirect dari Server Action di sini.
-    // page.tsx akan menjalankan animasi pintu lalu router.replace('/dashboard').
     return { success: true };
   } catch (error) {
     console.error("Gagal melakukan login:", error);
