@@ -318,7 +318,7 @@ export default function LoginPage() {
             {!isOpening && (
               <a
                 className="login-support"
-                href="https://discord.com/channels/@me/882646127541903361"
+                href="https://discord.com/users/882646127541903361"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Hubungi administrator melalui Discord"
