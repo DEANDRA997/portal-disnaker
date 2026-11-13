@@ -7,7 +7,7 @@ import {
   Banknote, Boxes, CalendarDays, CheckCircle2, ChevronDown, Clock3, Download,
   Edit3, FileText, Filter, KeyRound, LayoutDashboard, LoaderCircle, LogOut,
   Menu, Moon, Package, Plus, Search, ShieldAlert, ShieldCheck, Sun, Trash2, TrendingUp,
-  UserPlus, Wallet, Warehouse, X, XCircle,
+  UserPlus, Wallet, Warehouse, X, XCircle, MessageCircle, ExternalLink,
 } from "lucide-react";
 import {
   getTransactions, saveTransaction, getWarehouseStock, getActiveUser, logoutUser,
@@ -67,6 +67,8 @@ const number = (value: number) => Number(value || 0).toLocaleString("id-ID");
 
 const panelClass = "rounded-2xl border border-emerald-900/10 bg-white shadow-[0_14px_40px_rgba(4,35,31,.06)] dark:border-emerald-300/10 dark:bg-[#0b2623]/90 dark:shadow-[0_18px_55px_rgba(0,0,0,.22)]";
 const inputClass = "w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-emerald-100/10 dark:bg-[#061d1b] dark:text-emerald-50 dark:placeholder:text-emerald-100/30 dark:focus:border-emerald-400";
+
+const DISCORD_SUPPORT_URL = "https://discord.com/users/882646127541903361"; // Buka profil administrator; pengguna memilih Message untuk memulai DM.
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -496,7 +498,7 @@ export default function DashboardPage() {
 
         {mobileMenuOpen && <button aria-label="Tutup menu" onClick={() => setMobileMenuOpen(false)} className="fixed inset-0 z-40 bg-[#001613]/65 backdrop-blur-sm md:hidden" />}
 
-        <aside className={`fixed inset-y-0 left-0 z-50 flex w-[276px] flex-col border-r border-emerald-900/10 bg-[#f8fbf9]/95 px-5 py-6 shadow-2xl backdrop-blur-2xl transition-transform duration-300 dark:border-emerald-100/10 dark:bg-[#062421]/95 md:translate-x-0 ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <aside className={`fixed inset-y-0 left-0 z-50 flex w-[276px] flex-col overflow-y-auto border-r border-emerald-900/10 bg-[#f8fbf9]/95 px-5 py-6 shadow-2xl backdrop-blur-2xl transition-transform duration-300 dark:border-emerald-100/10 dark:bg-[#062421]/95 md:translate-x-0 ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
           <div className="flex items-center justify-between gap-3 px-1">
             <div className="flex min-w-0 items-center gap-3">
               <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-700 to-[#052d29] shadow-lg shadow-emerald-950/20">
@@ -534,6 +536,25 @@ export default function DashboardPage() {
               <span className="font-black text-amber-200">{crisisCount} item</span>
             </div>
           </div>
+          <a
+            href={DISCORD_SUPPORT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Buka profil Discord administrator Portal Disnaker untuk mengirim pesan"
+            className="group mt-4 block rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/[.09] to-cyan-500/[.04] p-4 transition hover:-translate-y-0.5 hover:border-emerald-400/40 hover:bg-emerald-500/[.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f8fbf9] dark:focus-visible:ring-offset-[#062421]"
+          >
+            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-200">
+              <span className="grid h-8 w-8 place-items-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"><MessageCircle size={16} /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[10px] font-black uppercase tracking-[.12em]">Butuh bantuan?</span>
+                <span className="mt-0.5 block text-[9px] font-medium normal-case tracking-normal text-slate-500 dark:text-emerald-100/50">Buka profil administrator dan pilih Message untuk mengirim DM</span>
+              </span>
+              <ExternalLink size={13} className="shrink-0 text-emerald-600/70 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 dark:text-emerald-200/60" />
+            </div>
+            <span className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-[#5865F2]/30 bg-[#5865F2]/10 px-3 py-2 text-[9px] font-black uppercase tracking-[.12em] text-[#5865F2] transition group-hover:bg-[#5865F2] group-hover:text-white dark:text-[#aeb5ff]">
+              <MessageCircle size={13} /> Buka Discord & Kirim DM
+            </span>
+          </a>
           <div className="mt-4 flex items-center gap-2 px-2 text-[9px] font-semibold tracking-[.12em] text-slate-400 dark:text-emerald-100/30">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" /> SISTEM OPERASIONAL · V2.0
           </div>
